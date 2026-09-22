@@ -12,5 +12,6 @@ All notable changes to tobs_minigames. Each version is also a [GitHub release](h
 - **Thermite:** remember the squares that light up on a grid
 - **Keypad, wire cutting, lockpick and fingerprint:** new web minigames
 - Easy, medium and hard for each, and every setting can be changed by the calling script
+- **Easy to build in:** `exports.tobs_minigames:Play(playerId, name, opts)` runs a game from the server (one answer, from that player, not faster than possible); client exports wait in a thread or take a callback; `fallback` plays another game when a GTA screen doesn't load; the `tobs_minigames:finished` event reports every result
 - English, Danish, German, Swedish, Norwegian and Dutch
 - `/minigame <name> [difficulty]` to try them in game

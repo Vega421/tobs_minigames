@@ -1,43 +1,28 @@
--- tobs_minigames: minigames any script can call, from the client.
+-- tobs_minigames: minigames any script can call. See README.md for examples.
 --
---   exports.tobs_minigames:Drill(opts)        GTA's Fleeca drilling screen
---   exports.tobs_minigames:Hack(opts)         GTA's hacking laptop (HackConnect + BruteForce)
---   exports.tobs_minigames:Safe(opts)         GTA's safe dial: turn to each number, turn back on the click
---   exports.tobs_minigames:Thermite(opts)     remember which squares lit up, click them
---   exports.tobs_minigames:Keypad(opts)       remember a code, type it
---   exports.tobs_minigames:Wires(opts)        cut the wires in the right order
---   exports.tobs_minigames:Lockpick(opts)     set each pin in its sweet spot
---   exports.tobs_minigames:Fingerprint(opts)  pick the pieces of a fingerprint
---   exports.tobs_minigames:Start(name, opts)  any of them by name ("drill", "keypad", ...)
---   exports.tobs_minigames:IsActive()         true while a minigame is open
+-- Client exports (each one waits until the game ends, so call it inside a thread, or pass a callback):
+--   exports.tobs_minigames:Drill(opts, cb)        GTA's Fleeca drilling screen
+--   exports.tobs_minigames:Hack(opts, cb)         GTA's hacking laptop (HackConnect + BruteForce)
+--   exports.tobs_minigames:Safe(opts, cb)         GTA's safe dial: turn to each number, turn back on the click
+--   exports.tobs_minigames:Thermite(opts, cb)     remember which squares lit up, click them
+--   exports.tobs_minigames:Keypad(opts, cb)       remember a code, type it
+--   exports.tobs_minigames:Wires(opts, cb)        cut the wires in the right order
+--   exports.tobs_minigames:Lockpick(opts, cb)     set each pin in its sweet spot
+--   exports.tobs_minigames:Fingerprint(opts, cb)  pick the pieces of a fingerprint
+--   exports.tobs_minigames:Start(name, opts, cb)  any of them by name ("drill", "keypad", ...)
+--   exports.tobs_minigames:IsActive()             true while a minigame is open
+-- The server can also run one for a player: exports.tobs_minigames:Play(playerId, name, opts)
+-- (server/main.lua), which is the one to use when the result pays out.
 --
 -- opts: nil (MG.Difficulty), "easy" / "medium" / "hard", or a table ({difficulty = "hard", pins = 6})
--- that overrides the settings in config.lua. Each call waits until the game ends and returns true
--- (passed) or false (failed, gave up, died, another game already open). Drill, Hack and Safe return
--- nil when GTA's screen didn't load, so the script can use something else.
--- The result is decided in the player's game: a server must still check anything that pays out.
+-- that overrides the settings in config.lua. {fallback = "lockpick"} plays that game instead when a
+-- GTA screen doesn't load. cb: function(result) called when it ends; the export then returns at once.
+-- Result: true (passed) or false (failed, gave up, died, another game already open). Drill, Hack and
+-- Safe give nil when GTA's screen didn't load and there's no fallback.
+-- When a game ends, the client event "tobs_minigames:finished" (name, result) fires for other scripts.
 
-local Games = {drill = "Drill", hack = "Hack", safe = "Safe", thermite = "Thermite", keypad = "Keypad", wires = "Wires", lockpick = "Lockpick", fingerprint = "Fingerprint"}
-local Levels = {easy = true, medium = true, hard = true}
 local Active = false
 local Pending -- the web game's promise while one is open
-
--- Settings for one game: the config, then the difficulty, then the script's own settings
-function MGOptions(name, opts)
-    local conf = MG[Games[name]] or {}
-    local level = MG.Difficulty
-    if type(opts) == "string" then level, opts = opts, nil end
-    if type(opts) == "table" and opts.difficulty then level = opts.difficulty end
-    if not Levels[level] then level = "medium" end
-    local o = {}
-    for k, v in pairs(conf) do
-        if not Levels[k] then o[k] = v end
-    end
-    for k, v in pairs(conf[level] or {}) do o[k] = v end
-    for k, v in pairs(type(opts) == "table" and opts or {}) do o[k] = v end
-    o.difficulty = level
-    return o
-end
 
 local function Finish(success)
     local p = Pending
@@ -73,34 +58,56 @@ local function RunWeb(name, o)
 end
 
 local function Run(name, opts)
-    if type(name) == "string" then name = name:lower() end
-    if Games[name] == nil then
+    local game = MGName(name)
+    if game == nil then
         print(("^1[tobs_minigames] Unknown minigame '%s'. Use: drill, hack, safe, thermite, keypad, wires, lockpick, fingerprint^7"):format(tostring(name)))
         return false
     end
     if Active then return false end
     Active = true
-    local o = MGOptions(name, opts)
+    local o = MGOptions(game, opts)
     local ok, result = pcall(function()
-        if name == "drill" then return MGDrill.Start(o) end
-        if name == "hack" then return MGHack.Start(o) end
-        if name == "safe" then return MGSafe.Start(o) end
-        return RunWeb(name, o)
+        if game == "drill" then return MGDrill.Start(o) end
+        if game == "hack" then return MGHack.Start(o) end
+        if game == "safe" then return MGSafe.Start(o) end
+        return RunWeb(game, o)
     end)
     Active = false
     if not ok then
-        print(("^1[tobs_minigames] The %s minigame stopped with an error: %s^7"):format(name, tostring(result)))
+        print(("^1[tobs_minigames] The %s minigame stopped with an error: %s^7"):format(game, tostring(result)))
         Finish(false)
-        return false
+        result = false
     end
+    -- GTA's screen didn't load: play the fallback game instead, at the same difficulty
+    if result == nil and o.fallback and MGName(o.fallback) ~= game then
+        return Run(o.fallback, o.difficulty)
+    end
+    TriggerEvent("tobs_minigames:finished", game, result)
     return result
 end
 
-for name, export in pairs(Games) do
-    exports(export, function(opts) return Run(name, opts) end)
+-- Waits for the result, or with a callback runs in its own thread and returns at once
+local function Call(name, opts, cb)
+    if type(opts) == "function" and cb == nil then opts, cb = nil, opts end
+    if type(cb) ~= "function" then return Run(name, opts) end
+    Citizen.CreateThread(function() cb(Run(name, opts)) end)
+    return nil
 end
-exports("Start", Run)
+
+for name, export in pairs(MGGames) do
+    exports(export, function(opts, cb) return Call(name, opts, cb) end)
+end
+exports("Start", Call)
 exports("IsActive", function() return Active end)
+
+-- The server asks for a game (exports.tobs_minigames:Play) and gets the result back
+RegisterNetEvent("tobs_minigames:play")
+AddEventHandler("tobs_minigames:play", function(id, name, opts)
+    Citizen.CreateThread(function()
+        local result = Run(name, opts)
+        TriggerServerEvent("tobs_minigames:result", id, result)
+    end)
+end)
 
 -- /minigame <name> [difficulty]: try one (it gives nothing)
 local function Chat(text)
@@ -109,10 +116,9 @@ end
 
 if MG.TestCommand then
     RegisterCommand(MG.TestCommand, function(_, args)
-        local name = args[1] and args[1]:lower()
-        if Games[name] == nil then Chat(ML("test_usage", MG.TestCommand)) return end
-        Citizen.CreateThread(function()
-            local result = Run(name, args[2])
+        local name = MGName(args[1])
+        if name == nil then Chat(ML("test_usage", MG.TestCommand)) return end
+        Call(name, args[2], function(result)
             if result == nil then Chat(ML("test_no_screen", name))
             elseif result then Chat(ML("test_passed", name))
             else Chat(ML("test_failed", name)) end

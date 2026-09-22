@@ -33,27 +33,71 @@ The drill, laptop and safe use GTA's own screens, sounds and animations. Every m
 
 ## Use it in your script
 
-From client code, inside a thread (the call waits until the game ends):
+Add `tobs_minigames` to your resource's dependencies (or see [Optional](#optional-tobs_minigames) below), then pick the way that fits.
+
+### On the server (use this when the result pays out)
 
 ```lua
-local passed = exports.tobs_minigames:Keypad()                 -- MG.Difficulty (medium)
-local passed = exports.tobs_minigames:Wires("hard")            -- a difficulty
-local passed = exports.tobs_minigames:Lockpick({pins = 6})     -- your own settings
-local passed = exports.tobs_minigames:Start("fingerprint", "easy")
-
-local drilled = exports.tobs_minigames:Drill({time = 15000})   -- true, false, or nil
-if drilled == nil then
-    -- GTA's drilling screen didn't load: use a progress bar or another minigame
+-- server.lua, inside an event handler or thread
+local passed = exports.tobs_minigames:Play(source, "safe", "hard")
+if passed then
+    -- open the safe, pay the player...
 end
 ```
 
-- Returns `true` when the player passed, `false` when they failed, gave up (ESC), died, or another minigame was already open.
-- `Drill`, `Hack` and `Safe` return `nil` when GTA's screen couldn't load.
-- `Safe({animate = true})` also plays GTA's safe cracking animations on the player: stand them at the safe first.
-- `exports.tobs_minigames:IsActive()` is `true` while a minigame is open.
-- The drill can never be finished faster than its `time`, so it replaces a progress bar: don't run both.
+The server asks the player's game to run the minigame and waits for the answer. It only accepts that one answer, from that player, and counts an answer that came back faster than the game can be played as failed. Keep checking what matters for your payout (distance, state) as usual.
 
-**Security:** a minigame runs in the player's game, so a cheater can fake the result. Anything that pays out must still be checked on the server (time taken, distance, state), like any FiveM minigame.
+### On the client
+
+```lua
+-- inside a thread: waits until the game ends
+local passed = exports.tobs_minigames:Keypad("hard")
+
+-- or with a callback: returns at once
+exports.tobs_minigames:Wires("easy", function(passed)
+    if passed then TriggerServerEvent("myscript:wiresCut") end
+end)
+```
+
+### Settings for one call
+
+```lua
+exports.tobs_minigames:Lockpick()                                 -- MG.Difficulty (medium)
+exports.tobs_minigames:Lockpick("easy")                           -- a difficulty
+exports.tobs_minigames:Lockpick({difficulty = "hard", pins = 6})  -- a difficulty plus your own changes
+exports.tobs_minigames:Start("lockpick", "easy")                  -- any game by name
+```
+
+Every setting is listed in `config.lua`.
+
+### GTA's screens
+
+`Drill`, `Hack` and `Safe` use GTA's own screens. If one doesn't load, the result is `nil`. Give a `fallback` to play another game instead:
+
+```lua
+local drilled = exports.tobs_minigames:Drill({time = 15000, fallback = "lockpick"})
+```
+
+The drill can never be finished faster than its `time`, so use it instead of a progress bar, not before one. `Safe({animate = true})` also plays GTA's safe cracking animations: stand the player at the safe first.
+
+### Optional tobs_minigames
+
+To make it optional in your script, with a plain fallback when it isn't installed:
+
+```lua
+local function Minigame(name, opts)
+    if GetResourceState("tobs_minigames") ~= "started" then return true end -- not installed: skip it
+    return exports.tobs_minigames:Start(name, opts)
+end
+```
+
+### Results
+
+- `true`: passed. `false`: failed, gave up (ESC), died, or another minigame was already open. `nil`: a GTA screen didn't load and there was no fallback.
+- `exports.tobs_minigames:IsActive()` is `true` while a minigame is open.
+- Other scripts can listen for every result: `AddEventHandler("tobs_minigames:finished", function(name, result) end)` (client).
+
+**Security:** a minigame runs in the player's game, so a cheater can fake the result, as with any FiveM minigame. `Play` makes that harder (one answer, the right player, not too fast), but the server must still check anything that pays out.
 
 ## Install
 
@@ -70,7 +114,7 @@ Everything is in `config.lua`: the language (`MG.Locale`), the default difficult
 The rules of every minigame are tested outside the game on every push:
 
 ```bash
-lua5.4 tests/main_test.lua && lua5.4 tests/drill_test.lua && lua5.4 tests/hack_test.lua && lua5.4 tests/safe_test.lua
+lua5.4 tests/main_test.lua && lua5.4 tests/server_test.lua && lua5.4 tests/drill_test.lua && lua5.4 tests/hack_test.lua && lua5.4 tests/safe_test.lua
 node --test tests/web/
 ```
 

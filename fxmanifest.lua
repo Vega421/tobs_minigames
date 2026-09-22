@@ -10,6 +10,7 @@ repository "https://github.com/Vega421/tobs_minigames"
 shared_scripts {
     "config.lua",
     "locales/locales.lua",
+    "shared/options.lua",
 }
 
 client_scripts {
@@ -17,6 +18,10 @@ client_scripts {
     "client/hack.lua",
     "client/safe.lua",
     "client/main.lua",
+}
+
+server_scripts {
+    "server/main.lua",
 }
 
 ui_page "web/index.html"
