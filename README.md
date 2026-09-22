@@ -109,6 +109,8 @@ Everything is in `config.lua`, with what each value does next to it: language, d
 
 **Preview in a browser:** open `dev/preview.html` to play the web minigames without FiveM. After changing `config.lua` or the texts, run `lua5.4 dev/build_preview.lua`.
 
+**Testing in game:** [TESTING.md](TESTING.md) is a checklist for everything, with and without the drop-ins. `dev/tobs_compattest` is a small test resource (`/compattest`) that calls the drop-ins like other scripts do.
+
 **Tests** run on every push. Locally:
 
 ```bash
