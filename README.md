@@ -150,7 +150,7 @@ The "faster than possible" limits are in `MG.MinTime` in `config.lua`.
 
 ## Drop-in replacements
 
-Already have scripts that use **qb-minigames** (QBCore's bank, house and car scripts) or **memorygame**? Put the folder from [`compat/`](compat/README.md) in place of the original: those scripts then play tobs_minigames' games without any changes.
+Already have scripts that use **qb-minigames** (QBCore's bank, house and car scripts), **memorygame**, **mhacking** (Qbox's bank robbery) or **safecracker** (Qbox's store robbery)? Put the folder from [`compat/`](compat/README.md) in place of the original: those scripts then play tobs_minigames' games without any changes.
 
 ## Testing in game
 

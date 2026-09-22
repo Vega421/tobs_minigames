@@ -195,7 +195,7 @@ end)
 
 ## Drop-in replacements
 
-Scripts written for **qb-minigames** or **memorygame** can use tobs_minigames without being changed: put the folder from `compat/` in place of the original. See [compat/README.md](compat/README.md).
+Scripts written for **qb-minigames**, **memorygame**, **mhacking** or **safecracker** (Qbox's bank and store robberies use the last two) can use tobs_minigames without being changed: put the folder from `compat/` in place of the original. See [compat/README.md](compat/README.md).
 
 ---
 
