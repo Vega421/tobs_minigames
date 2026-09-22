@@ -2,7 +2,7 @@
 
 # tobs_minigames
 
-**Twelve minigames any FiveM script can use: GTA's own drill, hacking laptop and safe dial, plus thermite, keypad, wire cutting, lockpick, fingerprint, hotwiring, a laser grid, key filing and a tracker sweep**
+**Twelve minigames any FiveM script can use, including GTA's own drill, hacking laptop and safe dial**
 
 [![Release](https://img.shields.io/github/v/release/Vega421/tobs_minigames?style=flat-square&color=ff6b2c&label=release)](https://github.com/Vega421/tobs_minigames/releases/latest)
 [![Tests](https://img.shields.io/github/actions/workflow/status/Vega421/tobs_minigames/tests.yml?style=flat-square&label=tests)](https://github.com/Vega421/tobs_minigames/actions/workflows/tests.yml)
@@ -14,189 +14,114 @@
 
 ---
 
-One call from your script opens a minigame and tells you whether the player passed. Works on every framework, because it doesn't need one.
+One call from your script opens a minigame and tells you whether the player passed. No framework, database or items needed.
 
 ## Minigames
 
 | Minigame | What the player does |
 | -------- | -------------------- |
-| **Drill** | GTA Online's Fleeca drilling screen: push the drill through 4 lock pins without overheating it |
-| **Hack** | GTA Online's hacking laptop: HackConnect.exe (find the IP), then BruteForce.exe (crack the password) |
-| **Safe** | GTA V's safe dial: turn to each number, and turn back when the tumbler clicks |
-| **Thermite** | Squares light up on a grid; click the same ones from memory |
-| **Keypad** | Remember a code, then type it before the time runs out |
-| **Wires** | Cut the wires in the order the clues give ("the wire right below red") |
-| **Lockpick** | Set each pin by stopping the pick in its sweet spot |
-| **Fingerprint** | Pick the 4 pieces of a fingerprint from a set with decoys |
-| **Hotwire** | Connect each wire to the terminal with its colour's name (on medium and hard, the names are printed in other colours) |
-| **Lasers** | Cross a room with WASD / the arrow keys, through walls of laser with sliding openings and beams sweeping up and down |
-| **KeyFiling** | Pick a cut on a blank key and hold SPACE to file it down to its line; too deep ruins the key |
-| **Tracker** | Move the scanner over a car, follow the signal (and ignore weaker decoys), click where the GPS tracker is |
+| **Drill** | GTA Online's Fleeca drilling screen: push through 4 lock pins without overheating |
+| **Hack** | GTA Online's hacking laptop: HackConnect.exe, then BruteForce.exe |
+| **Safe** | GTA V's safe dial: turn to each number, turn back when it clicks |
+| **Thermite** | Remember which squares lit up, then click them |
+| **Keypad** | Remember a code, then type it |
+| **Wires** | Cut the wires in the order of the clues |
+| **Lockpick** | Stop the pick in each pin's sweet spot |
+| **Fingerprint** | Pick the 4 pieces of a fingerprint |
+| **Hotwire** | Connect each wire to the terminal with its colour's name |
+| **Lasers** | Cross a room without touching the moving lasers |
+| **Key filing** | File each cut of a key down to its line |
+| **Tracker** | Find a GPS tracker on a car by its signal |
 
-The drill, laptop and safe use GTA's own screens, sounds and animations, and the web minigames use GTA's hacking sounds (`MG.Sounds`). The wires each show their colour's name and have their own pattern, for colour-blind players (`MG.Wires.labels`). Every minigame has an easy, medium and hard setting, and every setting can be changed. The web minigames are in English, Danish, German, Swedish, Norwegian and Dutch.
-
-## Use it in your script
-
-Every export, event and command, with its arguments and return values, is in **[EXPORTS.md](EXPORTS.md)**. The most common uses:
-
-Add `tobs_minigames` to your resource's dependencies (or see [Optional](#optional-tobs_minigames) below), then pick the way that fits.
-
-### On the server (use this when the result pays out)
-
-```lua
--- server.lua, inside an event handler or thread
-local passed = exports.tobs_minigames:Play(source, "safe", "hard")
-if passed then
-    -- open the safe, pay the player...
-end
-```
-
-The server asks the player's game to run the minigame and waits for the answer. It only accepts that one answer, from that player, and counts an answer that came back faster than the game can be played as failed. Keep checking what matters for your payout (distance, state) as usual.
-
-### On the client
-
-```lua
--- inside a thread: waits until the game ends
-local passed = exports.tobs_minigames:Keypad("hard")
-
--- or with a callback: returns at once
-exports.tobs_minigames:Wires("easy", function(passed)
-    if passed then TriggerServerEvent("myscript:wiresCut") end
-end)
-```
-
-### Settings for one call
-
-```lua
-exports.tobs_minigames:Lockpick()                                 -- MG.Difficulty (medium)
-exports.tobs_minigames:Lockpick("easy")                           -- a difficulty
-exports.tobs_minigames:Lockpick({difficulty = "hard", pins = 6})  -- a difficulty plus your own changes
-exports.tobs_minigames:Start("lockpick", "easy")                  -- any game by name
-```
-
-Every setting is listed in `config.lua`.
-
-### GTA's screens
-
-`Drill`, `Hack` and `Safe` use GTA's own screens. If one doesn't load, the result is `nil`. Give a `fallback` to play another game instead:
-
-```lua
-local drilled = exports.tobs_minigames:Drill({time = 15000, fallback = "lockpick"})
-```
-
-The drill can never be finished faster than its `time`, so use it instead of a progress bar, not before one. `Safe({animate = true})` also plays GTA's safe cracking animations: stand the player at the safe first.
-
-### Optional tobs_minigames
-
-To make it optional in your script, with a plain fallback when it isn't installed:
-
-```lua
-local function Minigame(name, opts)
-    if GetResourceState("tobs_minigames") ~= "started" then return true end -- not installed: skip it
-    return exports.tobs_minigames:Start(name, opts)
-end
-```
-
-### Trackers on vehicles (a ready-made use of the tracker sweep)
-
-Your script puts a tracker on a vehicle on the server; players sweep for it with one call; your script hears when it's removed. The server checks the vehicle, the distance and the tracker, and only the first player to find it removes it.
-
-```lua
--- server: a boosted car gets a tracker
-exports.tobs_minigames:SetVehicleTracker(vehicle, {difficulty = "hard", job = jobId})   -- entity or network id
-
-AddEventHandler("tobs_minigames:trackerRemoved", function(playerId, vehicle, info)
-    -- stop the police GPS for info.job ...
-end)
-AddEventHandler("tobs_minigames:trackerMissed", function(playerId, vehicle, info) end)
--- also: exports.tobs_minigames:GetVehicleTracker(vehicle), RemoveVehicleTracker(vehicle)
-```
-
-```lua
--- client: an ox_target option on every vehicle
-exports.ox_target:addGlobalVehicle({{
-    name = "sweep", label = "Sweep for trackers", icon = "fa-solid fa-satellite-dish",
-    onSelect = function(data) exports.tobs_minigames:SweepVehicle(data.entity) end,
-}})
-```
-
-`SweepVehicle(vehicle)` returns `true` when the tracker was removed (or pass a callback: `function(removed, reason) end`, reason `"removed"`, `"missed"`, `"no_tracker"`, `"too_far"`, `"gone"`, `"no_vehicle"` or `"busy"`). The player looks at their phone while scanning, and a GTA notification tells them the result. Settings: `MG.Sweep` in `config.lua`.
-
-### Logging on the server
-
-Every `Play` ends with a server event, for Discord logs or spotting someone who passes suspiciously often:
-
-```lua
-AddEventHandler("tobs_minigames:played", function(playerId, name, result, ms, reason)
-    -- reason: "answered", "too_fast", "left" (the player left) or "no_answer" (10 minutes)
-end)
-```
-
-The "faster than possible" limits are in `MG.MinTime` in `config.lua`.
-
-### Results
-
-- `true`: passed. `false`: failed, gave up (ESC), died, or another minigame was already open. `nil`: a GTA screen didn't load and there was no fallback.
-- `exports.tobs_minigames:IsActive()` is `true` while a minigame is open.
-- Other scripts can listen for every result: `AddEventHandler("tobs_minigames:finished", function(name, result) end)` (client).
-
-**Security:** a minigame runs in the player's game, so a cheater can fake the result, as with any FiveM minigame. `Play` makes that harder (one answer, the right player, not too fast), but the server must still check anything that pays out.
+Every minigame has an easy, medium and hard setting, and comes in English, Danish, German, Swedish, Norwegian and Dutch.
 
 ## Install
 
 1. Put the `tobs_minigames` folder in your `resources` folder.
 2. Add `ensure tobs_minigames` to `server.cfg`.
-3. Restart the server and type **`/minigame`** in game to try every minigame.
+3. Restart the server and type **`/minigame`** in game.
 
-That's all: no framework, database, items or other resources needed. It works on Qbox, ESX, QBCore, vRP or no framework at all. The settings are in `config.lua`, and the defaults work as they are.
+That's all. It works on Qbox, ESX, QBCore, vRP or no framework at all, and the default settings in `config.lua` work as they are.
 
 ### Optional: let your other scripts use it
 
-The download also has a `[tobs_minigames-compat]` folder. You only need it if your server runs **qb-minigames**, **memorygame**, **mhacking** or **safecracker**. When it does, the server console tells you at start which ones. For each one:
+The download also has a `[tobs_minigames-compat]` folder. You only need it if your server runs **qb-minigames**, **memorygame**, **mhacking** or **safecracker**; the server console tells you at start. For each one:
 
 1. Delete the original folder (for example `safecracker`).
 2. Copy the folder with the same name from `[tobs_minigames-compat]` into `resources`.
 3. `ensure` it **after** `tobs_minigames`.
 
-The scripts that used the original now play tobs_minigames' games, without any edits. Details in [compat/README.md](compat/README.md).
+The scripts that used the original now play tobs_minigames' games, without any edits. Details: [compat/README.md](compat/README.md).
 
 ## Testing in game
 
-Type **`/minigame`** for the test menu: every minigame with its last result ("✓ Passed · 12.4 s · hard", failed, or a GTA screen that didn't load), a difficulty and a look to test with, and **Play all** to go through all twelve in a row (ESC in a game stops the run). The results also go to the F8 console. The menu can also put a test tracker on the nearest vehicle (admins, with `add_ace group.admin command.tobtracker allow`) and sweep it, to test the trackers on vehicles. `/minigame keypad hard` plays one straight away. Nothing is given or taken; `MG.TestCommand = false` turns it off.
+Type **`/minigame`** for the test menu:
 
-## The window
+- every minigame with its last result ("✓ Passed · 12.4 s · hard")
+- a difficulty and a look to test with
+- **Play all**: all twelve in a row (ESC stops the run)
+- a test tracker on the nearest car, and a sweep for it (admins: `add_ace group.admin command.tobtracker allow`)
 
-While a web minigame is open the player holds a tablet, looks at a phone, presses a keypad or works with their hands, so others see it (`MG.Animations`). Every web minigame starts with a short "how to play" card (`MG.Intro` seconds, or SPACE / a click); keys are drawn as keycaps, lives as dots, the timer shows its seconds and warns when time runs low, and the end shows how it went ("Success · 12.4 s"). The window is the same share of the screen on any resolution (`MG.Scale`), and `MG.TextSize` and `MG.ReducedMotion` help players who need bigger text or less movement.
+`/minigame wires hard` plays one straight away. Results also go to the F8 console. Nothing is given or taken.
+
+## Use it in your script
+
+```lua
+-- client, inside a thread
+local passed = exports.tobs_minigames:Keypad("hard")
+
+-- client, with a callback
+exports.tobs_minigames:Wires("easy", function(passed) end)
+
+-- server: use this when the result pays out
+local passed = exports.tobs_minigames:Play(source, "safe", "hard")
+```
+
+Every export, setting, event and command is in **[EXPORTS.md](EXPORTS.md)**, including trackers on vehicles for car boosting.
+
+**Security:** a minigame runs in the player's game, so a cheater can fake the result, as with any FiveM minigame. `Play` makes that harder (one answer, the right player, not too fast), but the server must still check anything that pays out.
 
 ## Looks
-
-The web minigames come in three styles, picked with `MG.Style` in `config.lua`:
 
 | Style | Look |
 | ----- | ---- |
 | `"default"` | A dark panel with an orange accent |
-| `"terminal"` | A green hacker terminal: monospace text, scanlines, a glow and a blinking cursor |
-| `"glass"` | A frosted glass panel over the game, with soft gradients |
+| `"terminal"` | A green hacker terminal with scanlines and a glow |
+| `"glass"` | A frosted glass panel over the game |
 
-`MG.Theme` changes single colours on top of the style, for example `MG.Theme = {accent = "#3e7bfa"}`. Try them in `dev/preview.html`.
+Pick one with `MG.Style` in `config.lua`, and change single colours with `MG.Theme`, for example `MG.Theme = {accent = "#3e7bfa"}`.
+
+The web minigames also:
+
+- start with a short "how to play" card (`MG.Intro`)
+- show keys as keycaps, lives as dots, and the seconds left
+- play GTA's hacking sounds (`MG.Sounds`)
+- animate the player: a tablet, a phone, a keypad, hands at work or kneeling (`MG.Animations`)
+- keep the same size on any screen (`MG.Scale`)
+- have bigger text (`MG.TextSize`) and less movement (`MG.ReducedMotion`) for players who need it
+- show each wire's colour name and a pattern, for colour-blind players
 
 ## Settings
 
-Everything is in `config.lua`: the language (`MG.Locale`), the default difficulty (`MG.Difficulty`), the look (`MG.Style`) and colours (`MG.Theme`), the server's minimum times (`MG.MinTime`), and each minigame's settings for easy, medium and hard, with what every value does.
+Everything is in `config.lua`, with what each value does next to it: language, default difficulty, look and colours, animations, sounds, and each minigame's settings for easy, medium and hard.
 
-## Tests
+## For developers
 
-The rules of every minigame are tested outside the game on every push:
+**Preview in a browser:** open `dev/preview.html` to play the web minigames without FiveM. After changing `config.lua` or the texts, run `lua5.4 dev/build_preview.lua`.
+
+**Tests** run on every push. Locally:
 
 ```bash
-lua5.4 tests/main_test.lua && lua5.4 tests/server_test.lua && lua5.4 tests/sweep_test.lua && lua5.4 tests/testmenu_test.lua && lua5.4 tests/anims_test.lua && lua5.4 tests/compat_test.lua && lua5.4 tests/drill_test.lua && lua5.4 tests/hack_test.lua && lua5.4 tests/safe_test.lua
+for f in tests/*_test.lua; do lua5.4 "$f" || break; done
 node --test tests/web/logic.test.js
 ```
 
-## Preview in a browser
-
-Open `dev/preview.html` (double-click it) to play the web minigames without FiveM: pick the game, difficulty and language. Results and sounds show in the log. It uses the real `web/` files and the settings from `config.lua`; after changing `config.lua` or the texts, run `lua5.4 dev/build_preview.lua`. `dev/` isn't in the release zip.
-
 ## Credits
 
-Made by Vega. GPL-3.0. The drill's scaleform method names come from [meta-hub/fivem-drilling](https://github.com/meta-hub/fivem-drilling) (GPL-3.0). The hacking laptop's method names and click results were looked up in [TransitNode/Hacking_PC](https://github.com/TransitNode/Hacking_PC) and draobrehtom's HackingGame gist; no code was copied from them. The safe dial's sprite names were looked up in [TimothyDexter/FiveM-SafeCrackingMinigame](https://github.com/TimothyDexter/FiveM-SafeCrackingMinigame) (no license, names only). Sound, animation and audio bank names were checked against [DurtyFree/gta-v-data-dumps](https://github.com/DurtyFree/gta-v-data-dumps).
+Made by Vega. GPL-3.0.
+
+- Drill scaleform method names: [meta-hub/fivem-drilling](https://github.com/meta-hub/fivem-drilling) (GPL-3.0)
+- Hacking laptop method names: [TransitNode/Hacking_PC](https://github.com/TransitNode/Hacking_PC) and draobrehtom's HackingGame gist (names only)
+- Safe dial sprite names: [TimothyDexter/FiveM-SafeCrackingMinigame](https://github.com/TimothyDexter/FiveM-SafeCrackingMinigame) (names only)
+- Sound, animation, scenario and prop names checked in [DurtyFree/gta-v-data-dumps](https://github.com/DurtyFree/gta-v-data-dumps)
+- Drop-ins match the exports and events of [qb-minigames](https://github.com/qbcore-fivem/qb-minigames) (GPL-3.0), [safecracker](https://github.com/qbcore-fivem/safecracker), memorygame and mhacking (names only, no code copied)

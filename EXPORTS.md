@@ -195,7 +195,7 @@ end)
 
 ## Drop-in replacements
 
-Scripts written for **qb-minigames**, **memorygame**, **mhacking** or **safecracker** (Qbox's bank and store robberies use the last two) can use tobs_minigames without being changed: put the folder from `compat/` in place of the original. See [compat/README.md](compat/README.md).
+Scripts written for **qb-minigames**, **memorygame**, **mhacking** or **safecracker** (Qbox's bank and store robberies use the last two) can use tobs_minigames without being changed: replace the original with the folder of the same name from `[tobs_minigames-compat]` in the download (`compat/` in this repo). See [compat/README.md](compat/README.md).
 
 ---
 
@@ -225,7 +225,7 @@ Scripts written for **qb-minigames**, **memorygame**, **mhacking** or **safecrac
 | `hack` | `lives`, `timeLimit` (s), `ipConnect`, `background` (0–6), `columnSpeed`, `words` |
 | `safe` | `numbers`, `tolerance`, `lives`, `time` (s), `speed`, `slowSpeed`, `animate`, `combination` |
 | `thermite` | `size`, `squares`, `show` (ms), `mistakes`, `time` (s) |
-| `keypad` | `length`, `show` (ms), `time` (s), `attempts` |
+| `keypad` | `length`, `show` (ms, `0` = not shown), `time` (s), `attempts`, `code` (a code the player already knows) |
 | `wires` | `wires`, `cuts`, `time` (s), `labels` |
 | `lockpick` | `pins`, `zone`, `speed`, `lives`, `time` (s, optional) |
 | `fingerprint` | `decoys`, `time` (s), `lives` |
