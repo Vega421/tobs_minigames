@@ -217,7 +217,7 @@
     let dx = (input.right ? 1 : 0) - (input.left ? 1 : 0);
     let dy = (input.down ? 1 : 0) - (input.up ? 1 : 0);
     if (dx && dy) { dx *= Math.SQRT1_2; dy *= Math.SQRT1_2; }
-    dt = Math.min(dt, 0.1);
+    dt = Math.max(0, Math.min(dt, 0.1));
     return {
       x: Math.max(L.PLAYER_R, Math.min(1 - L.PLAYER_R, p.x + dx * speed * dt)),
       y: Math.max(L.PLAYER_R, Math.min(L.ROOM_H - L.PLAYER_R, p.y + dy * speed * dt)),
@@ -229,7 +229,9 @@
   // KEY FILING: file each cut of a blank key down to its depth (0 = untouched, 1 = through)
 
   L.makeKeyCuts = (rand, count) => Array.from({ length: count }, () => 0.25 + rand() * 0.55);
-  L.fileCut = (depth, dt, speed) => Math.min(1, depth + speed * Math.min(dt, 0.1));
+  // A time step is never negative (a browser's first frame can be stamped a moment early) or longer than 0.1 s
+  L.step = (dt) => Math.max(0, Math.min(dt, 0.1));
+  L.fileCut = (depth, dt, speed) => Math.min(1, depth + speed * L.step(dt));
   L.cutOk = (depth, target, tol) => Math.abs(depth - target) <= tol;
   L.cutRuined = (depth, target, tol) => depth > target + tol;
   L.keyDone = (depths, targets, tol) => depths.every((d, i) => L.cutOk(d, targets[i], tol));
