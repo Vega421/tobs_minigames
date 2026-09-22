@@ -144,13 +144,21 @@ The "faster than possible" limits are in `MG.MinTime` in `config.lua`.
 
 ## Install
 
-1. Download the latest release and put `tobs_minigames` in your `resources` folder.
-2. Add `ensure tobs_minigames` to `server.cfg`, before the scripts that use it.
-3. Test them in game with `/minigame` (see below).
+1. Put the `tobs_minigames` folder in your `resources` folder.
+2. Add `ensure tobs_minigames` to `server.cfg`.
+3. Restart the server and type **`/minigame`** in game to try every minigame.
 
-## Drop-in replacements
+That's all: no framework, database, items or other resources needed. It works on Qbox, ESX, QBCore, vRP or no framework at all. The settings are in `config.lua`, and the defaults work as they are.
 
-Already have scripts that use **qb-minigames** (QBCore's bank, house and car scripts), **memorygame**, **mhacking** (Qbox's bank robbery) or **safecracker** (Qbox's store robbery)? Put the folder from [`compat/`](compat/README.md) in place of the original: those scripts then play tobs_minigames' games without any changes.
+### Optional: let your other scripts use it
+
+The download also has a `[tobs_minigames-compat]` folder. You only need it if your server runs **qb-minigames**, **memorygame**, **mhacking** or **safecracker**. When it does, the server console tells you at start which ones. For each one:
+
+1. Delete the original folder (for example `safecracker`).
+2. Copy the folder with the same name from `[tobs_minigames-compat]` into `resources`.
+3. `ensure` it **after** `tobs_minigames`.
+
+The scripts that used the original now play tobs_minigames' games, without any edits. Details in [compat/README.md](compat/README.md).
 
 ## Testing in game
 

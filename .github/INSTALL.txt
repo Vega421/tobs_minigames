@@ -1,0 +1,23 @@
+tobs_minigames
+==============
+
+1. Put the "tobs_minigames" folder in your resources folder.
+2. Add this line to server.cfg:   ensure tobs_minigames
+3. Restart the server and type /minigame in game to try every minigame.
+
+No framework, database, items or other resources needed. Settings: tobs_minigames/config.lua
+For script makers: tobs_minigames/EXPORTS.md
+
+
+Optional: [tobs_minigames-compat]
+---------------------------------
+
+Only if your server runs qb-minigames, memorygame, mhacking or safecracker (the server console
+tells you at start). For each one:
+
+1. Delete the original folder (for example "safecracker").
+2. Copy the folder with the same name from [tobs_minigames-compat] into your resources folder.
+3. Ensure it after tobs_minigames in server.cfg.
+
+The scripts that used the original then play tobs_minigames' games, without any edits.
+If you don't use those resources, you can ignore or delete [tobs_minigames-compat].

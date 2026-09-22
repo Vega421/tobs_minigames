@@ -20,11 +20,13 @@ print(f"""## What's new
 
 ## Install
 
-1. Download **`{ZIP.format(version=version)}`** below.
-2. Delete your old `tobs_minigames` folder, then unzip this one into `resources/`.
-3. Add `ensure tobs_minigames` to `server.cfg`, before the scripts that use it.
+1. Download **`{ZIP.format(version=version)}`** below and unzip it.
+2. Put the `tobs_minigames` folder in `resources/` (replace your old one when updating).
+3. Add `ensure tobs_minigames` to `server.cfg`, restart, and type `/minigame` in game.
 
-**Works with:** any framework (it doesn't need one). Try the games in game with `/minigame keypad hard`.
+Optional: `[tobs_minigames-compat]` lets scripts that use qb-minigames, memorygame, mhacking or safecracker play tobs_minigames' games without edits. The server console tells you if you have any of them; see `INSTALL.txt`.
+
+**Works with:** any framework, or none. No database, items or other resources needed.
 
 ---
 

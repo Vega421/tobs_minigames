@@ -26,6 +26,7 @@ client_scripts {
 server_scripts {
     "server/main.lua",
     "server/tracker.lua",
+    "server/startup.lua",
 }
 
 ui_page "web/index.html"

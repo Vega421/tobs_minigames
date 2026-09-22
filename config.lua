@@ -7,6 +7,10 @@ MG.Sounds = true -- GTA's hacking sounds in the web minigames (clicks, right, wr
 -- /minigame <name> [easy|medium|hard] lets anyone try a minigame (it gives nothing). false = off
 MG.TestCommand = "minigame"
 
+-- A line in the server console at start, and a hint when drop-ins from [tobs_minigames-compat]
+-- could make your other scripts use tobs_minigames. false = quiet
+MG.StartupMessage = true
+
 -- The web minigames' window
 MG.Scale = 1.0 -- size on screen: 1.0 = the same share of the screen on any resolution (made for 1080p)
 MG.Intro = 5 -- seconds a "how to play" card shows before the game starts by itself (SPACE or a click starts it sooner). 0 = no card
