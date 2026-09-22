@@ -7,15 +7,20 @@
 -- The server only accepts the one answer it asked for, from that player, and treats an answer that
 -- came back faster than the game can be played (MGMinTime) as failed. The result is still decided in
 -- the player's game, so keep checking what matters for a payout (distance, state) in your script.
+--
+-- Every Play ends with the server event "tobs_minigames:played" (playerId, name, result, ms, reason),
+-- for logs: reason is "answered", "too_fast", "left" (the player left) or "no_answer" (10 minutes).
+--   AddEventHandler("tobs_minigames:played", function(playerId, name, result, ms, reason) end)
 
 local Waiting = {} -- [id] = {src, name, started, min, promise}
 local NextId = 0
 local MaxWait = 10 * 60 * 1000 -- give up after 10 minutes
 
-local function Done(id, result)
+local function Done(id, result, reason)
     local w = Waiting[id]
     if w == nil then return end
     Waiting[id] = nil
+    TriggerEvent("tobs_minigames:played", w.src, w.name, result, GetGameTimer() - w.started, reason)
     w.promise:resolve(result)
 end
 
@@ -47,7 +52,7 @@ local function Play(src, name, opts, cb)
     local p = promise.new()
     Waiting[id] = {src = src, name = game, started = GetGameTimer(), min = MinTime(game, opts), promise = p}
     TriggerClientEvent("tobs_minigames:play", src, id, game, opts)
-    Citizen.SetTimeout(MaxWait, function() Done(id, false) end)
+    Citizen.SetTimeout(MaxWait, function() Done(id, false, "no_answer") end)
     return Citizen.Await(p)
 end
 exports("Play", Play)
@@ -59,15 +64,15 @@ AddEventHandler("tobs_minigames:result", function(id, result)
     if w == nil or w.src ~= src then return end -- not asked for, or another player's game
     if result == true and GetGameTimer() - w.started < w.min then
         print(("^3[tobs_minigames] %s (%d) finished %s faster than possible: counted as failed^7"):format(GetPlayerName(src) or "?", src, w.name))
-        result = false
+        return Done(id, false, "too_fast")
     end
     if result ~= nil then result = result == true end
-    Done(id, result)
+    Done(id, result, "answered")
 end)
 
 AddEventHandler("playerDropped", function()
     local src = source
     for id, w in pairs(Waiting) do
-        if w.src == src then Done(id, false) end
+        if w.src == src then Done(id, false, "left") end
     end
 end)

@@ -33,6 +33,8 @@ end
 
 -- The shortest time a real player could finish a game in (ms). The server rejects faster results.
 function MGMinTime(name, o)
+    local own = type(MG.MinTime) == "table" and MG.MinTime[name]
+    if type(own) == "number" then return own end
     if name == "drill" then return (o.time or 0) - 1000 end
     if name == "safe" then return (o.numbers or 1) * 1500 end
     if name == "hack" then return 4000 end

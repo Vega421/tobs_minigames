@@ -56,7 +56,7 @@ local function RunWeb(name, o)
     local p = promise.new()
     Pending = p
     SetNuiFocus(true, true) -- before opening, so an answer can never leave the focus on
-    SendNUIMessage({action = "open", game = name, opts = o, text = MGTexts()})
+    SendNUIMessage({action = "open", game = name, opts = o, text = MGTexts(), theme = MG.Theme})
     local ped = PlayerPedId()
     local limit = (o.time or 240) + (o.show or 0) / 1000 + 15
     local deadline = GetGameTimer() + limit * 1000

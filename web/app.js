@@ -63,8 +63,19 @@
     setTimeout(() => post('done', { success }), 900);
   }
 
+  // MG.Theme from config.lua: colours for the CSS variables in style.css
+  const THEME_VARS = { accent: '--brand', background: '--bg', text: '--text', muted: '--muted', good: '--good', bad: '--bad', gold: '--gold' };
+  function applyTheme(theme) {
+    const root = document.documentElement.style;
+    for (const [key, cssVar] of Object.entries(THEME_VARS)) {
+      if (theme && typeof theme[key] === 'string' && theme[key] !== '') root.setProperty(cssVar, theme[key]);
+      else root.removeProperty(cssVar);
+    }
+  }
+
   function open(data) {
     const t = data.text;
+    applyTheme(data.theme);
     game = { name: data.game, o: data.opts || {}, t, ended: false, rand: M.random(data.opts && data.opts.seed) };
     $('mg-title').textContent = t['title_' + data.game] || data.game;
     $('mg-hint').textContent = '';

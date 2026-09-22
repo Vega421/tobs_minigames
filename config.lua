@@ -7,6 +7,23 @@ MG.Sounds = true -- GTA's hacking sounds in the web minigames (clicks, right, wr
 -- /minigame <name> [easy|medium|hard] lets anyone try a minigame (it gives nothing). false = off
 MG.TestCommand = "minigame"
 
+-- Colours of the web minigames, to match your server (any CSS colour)
+MG.Theme = {
+    accent = "#ff6b2c", -- the top line, timer, buttons, lit squares
+    background = "rgba(14, 16, 21, 0.96)", -- the panel
+    text = "#e8eaef",
+    muted = "#8a92a3", -- hints and counters
+    good = "#3ecf8e", -- right answers
+    bad = "#ff4d5e", -- mistakes
+    gold = "#f2c14e", -- the lockpick's sweet spot
+}
+
+-- Server: an answer to exports.tobs_minigames:Play that comes back faster than this (ms) counts as
+-- failed. Leave a game out to use the built-in guess: drill = its time - 1 s, safe = 1.5 s per number,
+-- hack = 4 s, keypad / thermite = the time the code or squares are shown + 0.5 s, the rest = 1 s.
+-- Example: MG.MinTime = {lockpick = 2500, wires = 3000}
+MG.MinTime = {}
+
 -- Each minigame: the settings, then what "easy", "medium" and "hard" change.
 -- A script can pass a difficulty ("hard") or its own settings ({pins = 6}) to override these.
 

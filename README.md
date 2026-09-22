@@ -91,6 +91,18 @@ local function Minigame(name, opts)
 end
 ```
 
+### Logging on the server
+
+Every `Play` ends with a server event, for Discord logs or spotting someone who passes suspiciously often:
+
+```lua
+AddEventHandler("tobs_minigames:played", function(playerId, name, result, ms, reason)
+    -- reason: "answered", "too_fast", "left" (the player left) or "no_answer" (10 minutes)
+end)
+```
+
+The "faster than possible" limits are in `MG.MinTime` in `config.lua`.
+
 ### Results
 
 - `true`: passed. `false`: failed, gave up (ESC), died, or another minigame was already open. `nil`: a GTA screen didn't load and there was no fallback.
@@ -107,7 +119,7 @@ end
 
 ## Settings
 
-Everything is in `config.lua`: the language (`MG.Locale`), the default difficulty (`MG.Difficulty`), and each minigame's settings for easy, medium and hard, with what every value does.
+Everything is in `config.lua`: the language (`MG.Locale`), the default difficulty (`MG.Difficulty`), the web minigames' colours (`MG.Theme`, to match your server), the server's minimum times (`MG.MinTime`), and each minigame's settings for easy, medium and hard, with what every value does.
 
 ## Tests
 

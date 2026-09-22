@@ -16,4 +16,6 @@ All notable changes to tobs_minigames. Each version is also a [GitHub release](h
 - GTA's hacking sounds in the web minigames (`MG.Sounds`), and colour names plus a pattern on every wire for colour-blind players (`MG.Wires.labels`)
 - English, Danish, German, Swedish, Norwegian and Dutch
 - `dev/preview.html` to try the web minigames in a browser, without FiveM
+- `MG.Theme`: the web minigames' colours, to match your server
+- The server event `tobs_minigames:played` (player, game, result, time, reason) for logs, and `MG.MinTime` to change the "faster than possible" limits
 - `/minigame <name> [difficulty]` to try them in game
