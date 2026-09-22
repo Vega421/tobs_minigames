@@ -8,7 +8,7 @@
 [![Tests](https://img.shields.io/github/actions/workflow/status/Vega421/tobs_minigames/tests.yml?style=flat-square&label=tests)](https://github.com/Vega421/tobs_minigames/actions/workflows/tests.yml)
 [![License](https://img.shields.io/github/license/Vega421/tobs_minigames?style=flat-square)](LICENSE)
 
-[**Download**](https://github.com/Vega421/tobs_minigames/releases/latest) · [Changelog](CHANGELOG.md) · [Report a problem](https://github.com/Vega421/tobs_minigames/issues)
+[**Download**](https://github.com/Vega421/tobs_minigames/releases/latest) · [All exports](EXPORTS.md) · [Changelog](CHANGELOG.md) · [Report a problem](https://github.com/Vega421/tobs_minigames/issues)
 
 </div>
 
@@ -36,6 +36,8 @@ One call from your script opens a minigame and tells you whether the player pass
 The drill, laptop and safe use GTA's own screens, sounds and animations, and the web minigames use GTA's hacking sounds (`MG.Sounds`). The wires each show their colour's name and have their own pattern, for colour-blind players (`MG.Wires.labels`). Every minigame has an easy, medium and hard setting, and every setting can be changed. The web minigames are in English, Danish, German, Swedish, Norwegian and Dutch.
 
 ## Use it in your script
+
+Every export, event and command, with its arguments and return values, is in **[EXPORTS.md](EXPORTS.md)**. The most common uses:
 
 Add `tobs_minigames` to your resource's dependencies (or see [Optional](#optional-tobs_minigames) below), then pick the way that fits.
 

@@ -20,7 +20,7 @@ jobs:
       - name: Build zip
         run: |
           mkdir -p dist/tobs_minigames
-          cp -r fxmanifest.lua config.lua locales shared client server web LICENSE README.md dist/tobs_minigames/
+          cp -r fxmanifest.lua config.lua locales shared client server web LICENSE README.md EXPORTS.md dist/tobs_minigames/
           cd dist && zip -r "tobs_minigames-${GITHUB_REF_NAME}.zip" tobs_minigames
 
       - name: Release notes from CHANGELOG.md
