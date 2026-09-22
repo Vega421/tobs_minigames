@@ -145,6 +145,115 @@
     return lines;
   };
 
+  // HOTWIRE: connect each wire to the terminal that names its colour. With `tricky`, the names are
+  // printed in other colours
+
+  L.makeHotwire = function (rand, count, tricky) {
+    count = Math.max(2, Math.min(count, L.COLORS.length));
+    const wires = L.shuffle(rand, L.COLORS).slice(0, count);
+    const names = L.shuffle(rand, wires);
+    const terminals = names.map((name, i) => {
+      let ink = name;
+      if (tricky) {
+        const others = wires.filter((c) => c !== name);
+        ink = others[Math.floor(rand() * others.length)];
+      }
+      return { name, ink };
+    });
+    return { wires, terminals };
+  };
+  // Connecting wire w to terminal t when `connected` (a list of wire indexes) are done:
+  // "ok", "done" (the last one), "used" (already connected) or "wrong"
+  L.connectWire = function (puzzle, connected, w, t) {
+    if (connected.includes(w) || !puzzle.terminals[t]) return 'used';
+    if (puzzle.terminals[t].name !== puzzle.wires[w]) return 'wrong';
+    return connected.length + 1 === puzzle.wires.length ? 'done' : 'ok';
+  };
+
+  // LASER GRID: the room is 1 wide and L.ROOM_H high; the player starts on the left and leaves on
+  // the right. Walls of laser cross the room, each with an opening that slides up and down (some
+  // walls also blink off). Short beams sweep up and down between the walls.
+
+  L.ROOM_H = 0.56;
+  L.PLAYER_R = 0.018;
+  // gap: the opening's height (share of the room); speed: how fast things move
+  L.makeLasers = function (rand, walls, sweepers, speed, gap) {
+    const beams = [];
+    for (let i = 0; i < walls; i++) {
+      const x = 0.16 + ((i + 0.5) / walls) * 0.68;
+      const blink = rand() < 0.3 ? { on: 1.4 + rand(), off: 0.8 + rand() * 0.5, phase: rand() * 2 } : null;
+      beams.push({ axis: 'v', x, gap: gap * L.ROOM_H, base: L.ROOM_H / 2, amp: L.ROOM_H * (0.5 - gap / 2) * 0.9,
+                   speed: speed * (0.5 + rand() * 0.6), phase: rand() * 6.3, blink });
+    }
+    for (let i = 0; i < sweepers; i++) {
+      // between two walls (or the start and the first wall)
+      const edges = [0.08].concat(beams.map((b) => b.x), [0.92]);
+      const k = Math.floor(rand() * (edges.length - 1));
+      const from = edges[k] + 0.025, to = edges[k + 1] - 0.025;
+      beams.push({ axis: 'h', from, to, base: L.ROOM_H / 2, amp: L.ROOM_H * 0.4,
+                   speed: speed * (0.6 + rand() * 0.6), phase: rand() * 6.3, blink: null });
+    }
+    return beams;
+  };
+  // A wall's opening centre, or a sweeping beam's height, at time t
+  L.beamPos = (b, t) => b.base + Math.sin(t * b.speed * 2 + b.phase) * b.amp;
+  L.beamOn = function (b, t) {
+    if (!b.blink) return true;
+    const cycle = b.blink.on + b.blink.off;
+    return ((t + b.blink.phase) % cycle) < b.blink.on;
+  };
+  // Does the player at p = {x, y} touch a beam that's on at time t?
+  L.laserHit = function (p, beams, t) {
+    const r = L.PLAYER_R;
+    return beams.some((b) => {
+      if (!L.beamOn(b, t)) return false;
+      const pos = L.beamPos(b, t);
+      if (b.axis === 'v') return Math.abs(p.x - b.x) <= r && Math.abs(p.y - pos) > b.gap / 2 - r;
+      return p.x + r >= b.from && p.x - r <= b.to && Math.abs(p.y - pos) <= r;
+    });
+  };
+  // Moves the player by input = {up, down, left, right} for dt seconds at `speed` room widths per second
+  L.moveDot = function (p, input, dt, speed) {
+    let dx = (input.right ? 1 : 0) - (input.left ? 1 : 0);
+    let dy = (input.down ? 1 : 0) - (input.up ? 1 : 0);
+    if (dx && dy) { dx *= Math.SQRT1_2; dy *= Math.SQRT1_2; }
+    dt = Math.min(dt, 0.1);
+    return {
+      x: Math.max(L.PLAYER_R, Math.min(1 - L.PLAYER_R, p.x + dx * speed * dt)),
+      y: Math.max(L.PLAYER_R, Math.min(L.ROOM_H - L.PLAYER_R, p.y + dy * speed * dt)),
+    };
+  };
+  L.LASER_START = { x: 0.04, y: L.ROOM_H / 2 };
+  L.laserExit = (p) => p.x >= 0.95;
+
+  // KEY FILING: file each cut of a blank key down to its depth (0 = untouched, 1 = through)
+
+  L.makeKeyCuts = (rand, count) => Array.from({ length: count }, () => 0.25 + rand() * 0.55);
+  L.fileCut = (depth, dt, speed) => Math.min(1, depth + speed * Math.min(dt, 0.1));
+  L.cutOk = (depth, target, tol) => Math.abs(depth - target) <= tol;
+  L.cutRuined = (depth, target, tol) => depth > target + tol;
+  L.keyDone = (depths, targets, tol) => depths.every((d, i) => L.cutOk(d, targets[i], tol));
+
+  // TRACKER SWEEP: find the tracker hidden on a car (1 wide, L.ROOM_H high) by its signal. Decoys
+  // (the car's electronics) give a weaker signal.
+
+  L.makeTracker = function (rand, decoys) {
+    const spot = () => ({ x: 0.18 + rand() * 0.64, y: L.ROOM_H * (0.22 + rand() * 0.56) });
+    const tracker = spot();
+    const others = [];
+    while (others.length < decoys) {
+      const d = spot();
+      if (Math.hypot(d.x - tracker.x, d.y - tracker.y) > 0.2) others.push(d);
+    }
+    return { tracker, decoys: others };
+  };
+  // Signal strength 0-1 at p: strongest over the tracker, at most 0.6 over a decoy
+  L.signal = function (p, puzzle, range = 0.45) {
+    const s = (q, max) => Math.max(0, max * (1 - Math.hypot(p.x - q.x, p.y - q.y) / range));
+    return Math.max(s(puzzle.tracker, 1), ...puzzle.decoys.map((d) => s(d, 0.6)), 0);
+  };
+  L.trackerFound = (p, puzzle, radius) => Math.hypot(p.x - puzzle.tracker.x, p.y - puzzle.tracker.y) <= radius;
+
   root.MGLogic = L;
   if (typeof module !== 'undefined' && module.exports) module.exports = L;
 })(typeof window !== 'undefined' ? window : globalThis);

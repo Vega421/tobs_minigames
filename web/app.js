@@ -363,11 +363,316 @@
     startTimer(o.time || 25);
   };
 
+  // A CSS variable's current colour (the theme), for drawing on canvases
+  const cssColor = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  const DARK_INK = ['black', 'blue', 'purple', 'green', 'red'];
+
+  // HOTWIRE: click a wire, then the terminal with its colour's name
+  Games.hotwire = function (g) {
+    const o = g.o;
+    const puzzle = M.makeHotwire(g.rand, o.wires || 4, o.tricky);
+    const connected = [], usedTerms = [];
+    let mistakes = o.mistakes || 0;
+    let picked = null;
+    const box = el('div', 'hotwire');
+    const left = el('div', 'hw-col'), right = el('div', 'hw-col');
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('class', 'hw-lines');
+    const flash = el('div', 'flash');
+    const wireEls = puzzle.wires.map((color, i) => {
+      const w = el('div', `wire hw-wire wire-${color}`);
+      w.style.backgroundColor = WIRE_HEX[color];
+      if (o.labels !== false) w.append(el('span', 'wire-label', g.t['n_' + color]));
+      w.onclick = () => {
+        if (g.ended || connected.includes(i)) return;
+        picked = i;
+        wireEls.forEach((e, j) => e.classList.toggle('picked', j === i));
+        sound('click');
+      };
+      left.append(w);
+      return w;
+    });
+    const link = (w, b, color) => {
+      const r = box.getBoundingClientRect(), a = w.getBoundingClientRect(), c = b.getBoundingClientRect();
+      const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      line.setAttribute('x1', a.right - r.left); line.setAttribute('y1', a.top + a.height / 2 - r.top);
+      line.setAttribute('x2', c.left - r.left); line.setAttribute('y2', c.top + c.height / 2 - r.top);
+      line.setAttribute('stroke', WIRE_HEX[color]);
+      svg.append(line);
+    };
+    puzzle.terminals.forEach((term, j) => {
+      const b = el('div', 'hw-term', g.t['n_' + term.name].toUpperCase());
+      b.style.color = WIRE_HEX[term.ink];
+      b.classList.add(DARK_INK.includes(term.ink) ? 'ink-dark' : 'ink-light');
+      b.onclick = () => {
+        if (g.ended || picked === null || usedTerms.includes(j)) return;
+        const r = M.connectWire(puzzle, connected, picked, j);
+        if (r === 'used') return;
+        if (r === 'wrong') {
+          mistakes -= 1;
+          status(`${g.t.mistakes}: ${Math.max(0, mistakes)}`);
+          b.classList.remove('spark'); void b.offsetWidth; b.classList.add('spark');
+          if (mistakes < 0) return finish(false, g.t.sparks);
+          flash.textContent = g.t.sparks;
+          return sound('bad');
+        }
+        connected.push(picked);
+        usedTerms.push(j);
+        wireEls[picked].classList.add('connected');
+        wireEls[picked].classList.remove('picked');
+        b.classList.add('connected');
+        link(wireEls[picked], b, puzzle.wires[picked]);
+        picked = null;
+        flash.textContent = '';
+        if (r === 'done') return finish(true);
+        sound('good');
+      };
+      right.append(b);
+    });
+    box.append(left, svg, right);
+    $('mg-body').append(el('div', 'hw-wrap'));
+    $('mg-body').lastChild.append(box, flash);
+    $('mg-hint').textContent = g.t.hotwire_hint;
+    status(`${g.t.mistakes}: ${mistakes}`);
+    startTimer(o.time || 16);
+  };
+
+  // LASER GRID: cross the room without touching a laser
+  const MOVE_KEYS = { KeyW: 'up', ArrowUp: 'up', KeyS: 'down', ArrowDown: 'down', KeyA: 'left', ArrowLeft: 'left', KeyD: 'right', ArrowRight: 'right' };
+  Games.lasers = function (g) {
+    const o = g.o;
+    const beams = M.makeLasers(g.rand, o.walls ?? 4, o.sweepers ?? 1, o.speed || 0.7, o.gap || 0.28);
+    const W = 624, H = Math.round(W * M.ROOM_H), S = W; // S: pixels per room width
+    const canvas = el('canvas', 'room');
+    canvas.width = W; canvas.height = H;
+    const flash = el('div', 'flash');
+    const wrap = el('div', 'room-wrap');
+    wrap.append(canvas, flash);
+    $('mg-body').append(wrap);
+    const ctx = canvas.getContext('2d');
+    let p = { ...M.LASER_START }, lives = o.lives || 1, safeUntil = 0;
+    const keys = {};
+    const t0 = performance.now();
+    let last = t0;
+    g.onKey = (e) => { if (MOVE_KEYS[e.code]) { keys[MOVE_KEYS[e.code]] = true; e.preventDefault(); } };
+    g.onKeyUp = (e) => { if (MOVE_KEYS[e.code]) keys[MOVE_KEYS[e.code]] = false; };
+    const laser = cssColor('--bad') || '#ff4d5e';
+    const draw = (t) => {
+      ctx.fillStyle = '#10131a';
+      ctx.fillRect(0, 0, W, H);
+      ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+      ctx.lineWidth = 1;
+      for (let x = 0; x < W; x += 24) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
+      for (let y = 0; y < H; y += 24) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
+      ctx.fillStyle = 'rgba(255,255,255,0.05)';
+      ctx.fillRect(0, 0, 0.08 * S, H);
+      ctx.fillStyle = cssColor('--good') || '#3ecf8e';
+      ctx.globalAlpha = 0.25;
+      ctx.fillRect(0.95 * S, 0, W - 0.95 * S, H);
+      ctx.globalAlpha = 1;
+      for (const b of beams) {
+        const on = M.beamOn(b, t);
+        const pos = M.beamPos(b, t) * S;
+        ctx.strokeStyle = laser;
+        ctx.lineWidth = on ? 3 : 1;
+        ctx.globalAlpha = on ? 1 : 0.25;
+        ctx.shadowColor = laser;
+        ctx.shadowBlur = on ? 12 : 0;
+        ctx.beginPath();
+        if (b.axis === 'v') {
+          const x = b.x * S, half = (b.gap / 2) * S;
+          ctx.moveTo(x, 0); ctx.lineTo(x, pos - half);
+          ctx.moveTo(x, pos + half); ctx.lineTo(x, H);
+        } else {
+          ctx.moveTo(b.from * S, pos); ctx.lineTo(b.to * S, pos);
+        }
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+        ctx.globalAlpha = 1;
+      }
+      const blinking = performance.now() < safeUntil && Math.floor(performance.now() / 120) % 2 === 0;
+      if (!blinking) {
+        ctx.fillStyle = cssColor('--text') || '#fff';
+        ctx.beginPath(); ctx.arc(p.x * S, p.y * S, M.PLAYER_R * S, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = cssColor('--brand') || '#ff6b2c';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      }
+    };
+    g.frame = (now) => {
+      const dt = (now - last) / 1000;
+      last = now;
+      const t = (now - t0) / 1000;
+      p = M.moveDot(p, keys, dt, o.move || 0.35);
+      if (now > safeUntil && M.laserHit(p, beams, t)) {
+        lives -= 1;
+        status(`${g.t.lives}: ${Math.max(0, lives)}`);
+        if (lives <= 0) { draw(t); return finish(false, g.t.laser_hit); }
+        sound('bad');
+        flash.textContent = g.t.laser_hit;
+        p = { ...M.LASER_START };
+        safeUntil = now + 1000;
+      }
+      if (M.laserExit(p)) { draw(t); return finish(true); }
+      draw(t);
+    };
+    $('mg-hint').textContent = g.t.lasers_hint;
+    status(`${g.t.lives}: ${lives}`);
+    draw(0);
+    startTimer(o.time || 35);
+  };
+
+  // KEY FILING: file each cut down to its line, not deeper
+  Games.keyfiling = function (g) {
+    const o = g.o;
+    const tol = o.tolerance || 0.045;
+    const targets = M.makeKeyCuts(g.rand, o.cuts || 5);
+    let depths = targets.map(() => 0);
+    let sel = 0, filing = false, lives = o.lives || 1, lastRasp = 0;
+    let last = performance.now();
+    const box = el('div', 'key');
+    box.append(el('div', 'key-bow'));
+    const blade = el('div', 'key-blade');
+    const cuts = targets.map((target, i) => {
+      const c = el('div', 'cut');
+      const band = el('div', 'band');
+      band.style.bottom = `${(1 - target - tol) * 100}%`;
+      band.style.height = `${tol * 2 * 100}%`;
+      const metal = el('div', 'metal');
+      const line = el('div', 'line');
+      line.style.bottom = `${(1 - target) * 100}%`;
+      c.append(metal, band, line);
+      c.onmousedown = (e) => { if (g.ended) return; sel = i; filing = true; e.preventDefault(); };
+      blade.append(c);
+      return { c, metal };
+    });
+    box.append(blade);
+    const flash = el('div', 'flash');
+    $('mg-body').append(el('div', 'key-wrap'));
+    $('mg-body').lastChild.append(box, flash);
+    const show = () => cuts.forEach((k, i) => {
+      k.metal.style.height = `${(1 - depths[i]) * 100}%`;
+      k.c.classList.toggle('selected', i === sel);
+      k.c.classList.toggle('ok', M.cutOk(depths[i], targets[i], tol));
+    });
+    const stopFiling = () => { filing = false; };
+    document.addEventListener('mouseup', stopFiling);
+    g.onKey = (e) => {
+      if (e.code === 'Space') { filing = true; e.preventDefault(); }
+      else if (e.code === 'ArrowLeft' || e.code === 'KeyA') { sel = Math.max(0, sel - 1); sound('click'); }
+      else if (e.code === 'ArrowRight' || e.code === 'KeyD') { sel = Math.min(targets.length - 1, sel + 1); sound('click'); }
+      show();
+    };
+    g.onKeyUp = (e) => { if (e.code === 'Space') filing = false; };
+    g.frame = (now) => {
+      const dt = (now - last) / 1000;
+      last = now;
+      if (filing) {
+        depths[sel] = M.fileCut(depths[sel], dt, o.speed || 0.4);
+        if (now - lastRasp > 160) { sound('move'); lastRasp = now; }
+        if (M.cutRuined(depths[sel], targets[sel], tol)) {
+          filing = false;
+          lives -= 1;
+          status(`${g.t.lives}: ${Math.max(0, lives)}`);
+          if (lives <= 0) { show(); return finish(false, g.t.key_ruined); }
+          sound('bad');
+          flash.textContent = g.t.key_ruined;
+          depths = targets.map(() => 0);
+        }
+      }
+      show();
+      if (M.keyDone(depths, targets, tol)) { document.removeEventListener('mouseup', stopFiling); finish(true); }
+    };
+    $('mg-hint').textContent = g.t.keyfiling_hint;
+    status(`${g.t.lives}: ${lives}`);
+    show();
+    startTimer(o.time || 40);
+  };
+
+  // TRACKER SWEEP: follow the signal, click where the tracker is
+  Games.tracker = function (g) {
+    const o = g.o;
+    const puzzle = M.makeTracker(g.rand, o.decoys || 0);
+    const W = 624, H = Math.round(W * M.ROOM_H), S = W;
+    const canvas = el('canvas', 'car');
+    canvas.width = W; canvas.height = H;
+    const meter = el('div', 'meter');
+    const fill = el('div', 'meter-fill');
+    const label = el('span', 'meter-label', `${g.t.signal}: 0%`);
+    meter.append(fill, label);
+    const flash = el('div', 'flash');
+    const wrap = el('div', 'room-wrap');
+    wrap.append(canvas, meter, flash);
+    $('mg-body').append(wrap);
+    const ctx = canvas.getContext('2d');
+    let lives = o.lives || 1, scan = null, lastBeep = 0;
+    const misses = [];
+    let found = null;
+    const round = (x, y, w, h, r) => { ctx.beginPath(); ctx.roundRect ? ctx.roundRect(x, y, w, h, r) : ctx.rect(x, y, w, h); };
+    const draw = (now) => {
+      ctx.fillStyle = '#10131a'; ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = '#1b1f28';
+      for (const [x, y] of [[0.2, 0.1], [0.72, 0.1], [0.2, 0.78], [0.72, 0.78]]) { round(x * S, y * H, 0.09 * S, 0.12 * H, 6); ctx.fill(); }
+      ctx.fillStyle = '#2b313d'; ctx.strokeStyle = '#4a5160'; ctx.lineWidth = 2;
+      round(0.1 * S, 0.14 * H, 0.8 * S, 0.72 * H, 40); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#1e2330';
+      round(0.3 * S, 0.22 * H, 0.1 * S, 0.56 * H, 10); ctx.fill();
+      round(0.62 * S, 0.24 * H, 0.08 * S, 0.52 * H, 10); ctx.fill();
+      for (const m of misses) {
+        ctx.strokeStyle = cssColor('--bad'); ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.moveTo(m.x * S - 7, m.y * S - 7); ctx.lineTo(m.x * S + 7, m.y * S + 7);
+        ctx.moveTo(m.x * S + 7, m.y * S - 7); ctx.lineTo(m.x * S - 7, m.y * S + 7); ctx.stroke();
+      }
+      if (found) {
+        ctx.fillStyle = cssColor('--good');
+        ctx.beginPath(); ctx.arc(found.x * S, found.y * S, 9, 0, Math.PI * 2); ctx.fill();
+      }
+      if (scan) {
+        const s = M.signal(scan, puzzle);
+        const pulse = Math.max(0, 1 - (now - lastBeep) / 300);
+        ctx.strokeStyle = cssColor('--brand'); ctx.lineWidth = 2;
+        ctx.globalAlpha = 0.5 + 0.5 * pulse;
+        ctx.beginPath(); ctx.arc(scan.x * S, scan.y * S, 18 + pulse * 10, 0, Math.PI * 2); ctx.stroke();
+        ctx.globalAlpha = 1;
+        fill.style.width = `${Math.round(s * 100)}%`;
+        label.textContent = `${g.t.signal}: ${Math.round(s * 100)}%`;
+      }
+    };
+    canvas.onmousemove = (e) => {
+      const r = canvas.getBoundingClientRect();
+      scan = { x: (e.clientX - r.left) / r.width, y: ((e.clientY - r.top) / r.height) * M.ROOM_H };
+    };
+    canvas.onmouseleave = () => { scan = null; };
+    canvas.onclick = () => {
+      if (g.ended || !scan) return;
+      if (M.trackerFound(scan, puzzle, o.radius || 0.055)) { found = puzzle.tracker; draw(performance.now()); return finish(true); }
+      misses.push({ ...scan });
+      lives -= 1;
+      status(`${g.t.lives}: ${Math.max(0, lives)}`);
+      if (lives <= 0) { found = puzzle.tracker; draw(performance.now()); return finish(false, g.t.nothing_here); }
+      sound('bad');
+      flash.textContent = g.t.nothing_here;
+    };
+    g.frame = (now) => {
+      if (scan) {
+        const s = M.signal(scan, puzzle);
+        if (s > 0.02 && now - lastBeep > 900 - 780 * s) { sound('move'); lastBeep = now; }
+      }
+      draw(now);
+    };
+    $('mg-hint').textContent = g.t.tracker_hint;
+    status(`${g.t.lives}: ${lives}`);
+    draw(performance.now());
+    startTimer(o.time || 35);
+  };
+
   window.addEventListener('message', (e) => {
     const d = e.data || {};
     if (d.action === 'open' && Games[d.game]) open(d);
     else if (d.action === 'close') close();
   });
+
+  document.addEventListener('keyup', (e) => { if (game && game.onKeyUp) game.onKeyUp(e); });
 
   document.addEventListener('keydown', (e) => {
     if (!game || game.ended) return;

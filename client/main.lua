@@ -9,6 +9,10 @@
 --   exports.tobs_minigames:Wires(opts, cb)        cut the wires in the right order
 --   exports.tobs_minigames:Lockpick(opts, cb)     set each pin in its sweet spot
 --   exports.tobs_minigames:Fingerprint(opts, cb)  pick the pieces of a fingerprint
+--   exports.tobs_minigames:Hotwire(opts, cb)      connect each wire to the terminal with its colour's name
+--   exports.tobs_minigames:Lasers(opts, cb)       cross a room of moving lasers
+--   exports.tobs_minigames:KeyFiling(opts, cb)    file each cut of a blank key down to its line
+--   exports.tobs_minigames:Tracker(opts, cb)      find a GPS tracker on a car by its signal
 --   exports.tobs_minigames:Start(name, opts, cb)  any of them by name ("drill", "keypad", ...)
 --   exports.tobs_minigames:IsActive()             true while a minigame is open
 -- The server can also run one for a player: exports.tobs_minigames:Play(playerId, name, opts)
@@ -72,7 +76,7 @@ end
 local function Run(name, opts)
     local game = MGName(name)
     if game == nil then
-        print(("^1[tobs_minigames] Unknown minigame '%s'. Use: drill, hack, safe, thermite, keypad, wires, lockpick, fingerprint^7"):format(tostring(name)))
+        print(("^1[tobs_minigames] Unknown minigame '%s'. Use: drill, hack, safe, thermite, keypad, wires, lockpick, fingerprint, hotwire, lasers, keyfiling, tracker^7"):format(tostring(name)))
         return false
     end
     if Active then return false end

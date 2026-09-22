@@ -20,7 +20,8 @@ MG.Theme = {
 
 -- Server: an answer to exports.tobs_minigames:Play that comes back faster than this (ms) counts as
 -- failed. Leave a game out to use the built-in guess: drill = its time - 1 s, safe = 1.5 s per number,
--- hack = 4 s, keypad / thermite = the time the code or squares are shown + 0.5 s, the rest = 1 s.
+-- hack = 4 s, keypad / thermite = the time the code or squares are shown + 0.5 s, lasers = 2.5 s,
+-- key filing = the time to file every cut to the shallowest depth, the rest = 1 s.
 -- Example: MG.MinTime = {lockpick = 2500, wires = 3000}
 MG.MinTime = {}
 
@@ -65,6 +66,43 @@ MG.Thermite = {
     easy = {size = 5, squares = 5, show = 3000, mistakes = 2, time = 15},
     medium = {size = 6, squares = 7, show = 2500, mistakes = 1, time = 12},
     hard = {size = 7, squares = 10, show = 2000, mistakes = 0, time = 10},
+}
+
+-- Hotwire a car: click a wire, then the terminal with its colour's name. tricky: the names are
+-- printed in other colours; mistakes: wrong connections allowed (sparks); time: seconds
+MG.Hotwire = {
+    easy = {wires = 3, tricky = false, mistakes = 2, time = 20},
+    medium = {wires = 4, tricky = true, mistakes = 1, time = 16},
+    hard = {wires = 5, tricky = true, mistakes = 0, time = 12},
+}
+
+-- Cross a room of lasers with WASD / the arrow keys. walls: laser walls, each with a sliding
+-- opening (share of the room: gap); sweepers: short beams moving up and down; speed: how fast the
+-- lasers move; move: how fast the player moves (room widths per second); lives: touches allowed
+-- (each sends you back to the start); time: seconds
+MG.Lasers = {
+    move = 0.35,
+    easy = {walls = 3, sweepers = 0, speed = 0.5, gap = 0.35, lives = 3, time = 40},
+    medium = {walls = 4, sweepers = 1, speed = 0.7, gap = 0.28, lives = 2, time = 35},
+    hard = {walls = 5, sweepers = 2, speed = 0.9, gap = 0.22, lives = 1, time = 30},
+}
+
+-- File a blank key: pick a cut, hold SPACE to file it down to its line. cuts: cuts on the key;
+-- tolerance: how close to the line counts (share of the depth); speed: filing speed (depth per
+-- second); lives: keys you can ruin by filing too deep; time: seconds
+MG.KeyFiling = {
+    easy = {cuts = 4, tolerance = 0.06, speed = 0.3, lives = 3, time = 45},
+    medium = {cuts = 5, tolerance = 0.045, speed = 0.4, lives = 2, time = 40},
+    hard = {cuts = 6, tolerance = 0.03, speed = 0.5, lives = 1, time = 35},
+}
+
+-- Find a GPS tracker on a car: move the scanner, follow the signal, click where it is. decoys:
+-- weaker signals from the car's electronics; radius: how close the click must be (share of the
+-- car's length); lives: wrong clicks allowed; time: seconds
+MG.Tracker = {
+    easy = {decoys = 0, radius = 0.07, lives = 3, time = 40},
+    medium = {decoys = 1, radius = 0.055, lives = 2, time = 35},
+    hard = {decoys = 2, radius = 0.04, lives = 1, time = 30},
 }
 
 -- A code flashes on screen; type it on the keypad. show: ms the code is visible; time: seconds

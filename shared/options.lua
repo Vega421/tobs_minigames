@@ -3,6 +3,7 @@
 MGGames = {
     drill = "Drill", hack = "Hack", safe = "Safe", thermite = "Thermite",
     keypad = "Keypad", wires = "Wires", lockpick = "Lockpick", fingerprint = "Fingerprint",
+    hotwire = "Hotwire", lasers = "Lasers", keyfiling = "KeyFiling", tracker = "Tracker",
 }
 local Levels = {easy = true, medium = true, hard = true}
 
@@ -39,5 +40,7 @@ function MGMinTime(name, o)
     if name == "safe" then return (o.numbers or 1) * 1500 end
     if name == "hack" then return 4000 end
     if name == "keypad" or name == "thermite" then return (o.show or 0) + 500 end
+    if name == "lasers" then return 2500 end -- crossing the room takes at least ~2.6 s
+    if name == "keyfiling" then return math.floor((o.cuts or 1) * 0.25 / (o.speed or 1) * 1000) end -- the shallowest cuts
     return 1000
 end

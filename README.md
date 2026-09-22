@@ -2,7 +2,7 @@
 
 # tobs_minigames
 
-**Eight minigames any FiveM script can use: GTA's own drill, hacking laptop and safe dial, plus thermite, a keypad, wire cutting, a lockpick and a fingerprint match**
+**Twelve minigames any FiveM script can use: GTA's own drill, hacking laptop and safe dial, plus thermite, keypad, wire cutting, lockpick, fingerprint, hotwiring, a laser grid, key filing and a tracker sweep**
 
 [![Release](https://img.shields.io/github/v/release/Vega421/tobs_minigames?style=flat-square&color=ff6b2c&label=release)](https://github.com/Vega421/tobs_minigames/releases/latest)
 [![Tests](https://img.shields.io/github/actions/workflow/status/Vega421/tobs_minigames/tests.yml?style=flat-square&label=tests)](https://github.com/Vega421/tobs_minigames/actions/workflows/tests.yml)
@@ -28,6 +28,10 @@ One call from your script opens a minigame and tells you whether the player pass
 | **Wires** | Cut the wires in the order the clues give ("the wire right below red") |
 | **Lockpick** | Set each pin by stopping the pick in its sweet spot |
 | **Fingerprint** | Pick the 4 pieces of a fingerprint from a set with decoys |
+| **Hotwire** | Connect each wire to the terminal with its colour's name (on medium and hard, the names are printed in other colours) |
+| **Lasers** | Cross a room with WASD / the arrow keys, through walls of laser with sliding openings and beams sweeping up and down |
+| **KeyFiling** | Pick a cut on a blank key and hold SPACE to file it down to its line; too deep ruins the key |
+| **Tracker** | Move the scanner over a car, follow the signal (and ignore weaker decoys), click where the GPS tracker is |
 
 The drill, laptop and safe use GTA's own screens, sounds and animations, and the web minigames use GTA's hacking sounds (`MG.Sounds`). The wires each show their colour's name and have their own pattern, for colour-blind players (`MG.Wires.labels`). Every minigame has an easy, medium and hard setting, and every setting can be changed. The web minigames are in English, Danish, German, Swedish, Norwegian and Dutch.
 
