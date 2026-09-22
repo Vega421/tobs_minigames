@@ -38,6 +38,18 @@ RegisterNUICallback("done", function(data, cb)
     cb({})
 end)
 
+-- The web games' sounds are GTA's hacking sounds (checked in DurtyFree/gta-v-data-dumps). The page
+-- asks by a short name; only these can be played.
+local Sounds = {
+    click = "HACKING_CLICK", move = "HACKING_MOVE_CURSOR", good = "HACKING_CLICK_GOOD",
+    bad = "HACKING_CLICK_BAD", success = "HACKING_SUCCESS", fail = "HACKING_FAILURE",
+}
+RegisterNUICallback("sound", function(data, cb)
+    local name = type(data) == "table" and Sounds[data.name]
+    if name and MG.Sounds ~= false and Pending then PlaySoundFrontend(-1, name, "", true) end
+    cb({})
+end)
+
 -- Opens a web game and waits for its result. It also ends (failed) if the player dies, or if the
 -- page never answers well after the game's time limit.
 local function RunWeb(name, o)

@@ -4,7 +4,9 @@
   'use strict';
   const M = window.MGLogic;
   const $ = (id) => document.getElementById(id);
-  const RESOURCE = typeof GetParentResourceName === 'function' ? GetParentResourceName() : 'tobs_minigames';
+  // Outside FiveM (dev/preview.html) there's no game: results and sounds go to the page around this one
+  const IN_GAME = typeof GetParentResourceName === 'function';
+  const RESOURCE = IN_GAME ? GetParentResourceName() : 'tobs_minigames';
   const WIRE_HEX = { red: '#e5484d', blue: '#3e7bfa', yellow: '#f5d90a', green: '#30a46c', white: '#eceef2', black: '#1c1f26', orange: '#f76b15', purple: '#8e4ec6' };
 
   let game = null; // the running game: {name, o, t, ended, frame, timerEnd, onKey}
@@ -18,6 +20,7 @@
   const fmt = (text, ...args) => { let i = 0; return text.replace(/%[sd]/g, () => String(args[i++])); };
 
   function post(name, data) {
+    if (!IN_GAME) { window.parent.postMessage({ preview: name, data }, '*'); return; }
     fetch(`https://${RESOURCE}/${name}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json; charset=UTF-8' },
@@ -26,6 +29,9 @@
   }
 
   function status(text) { $('mg-status').textContent = text || ''; }
+
+  // A GTA sound through the game: "click", "move", "good", "bad", "success" or "fail"
+  function sound(name) { post('sound', { name }); }
 
   // A countdown bar; the game fails when it runs out (fails = false: it only shows the time)
   function startTimer(seconds, fails = true) {
@@ -53,6 +59,7 @@
     const result = $('mg-result');
     result.textContent = message || (success ? game.t.success : game.t.failed);
     result.className = success ? 'good' : 'bad';
+    sound(success ? 'success' : 'fail');
     setTimeout(() => post('done', { success }), 900);
   }
 
@@ -97,6 +104,7 @@
     const showInput = () => { shown.textContent = input.padEnd(code.length, '•'); };
     const press = (k) => {
       if (!entering || g.ended) return;
+      if (k !== 'enter') sound('click');
       if (k === 'clear') input = '';
       else if (k === 'back') input = input.slice(0, -1);
       else if (k === 'enter') {
@@ -104,6 +112,7 @@
         attempts -= 1;
         status(`${g.t.attempts}: ${attempts}`);
         if (attempts <= 0) return finish(false, g.t.keypad_wrong);
+        sound('bad');
         flash.textContent = g.t.keypad_wrong;
         input = '';
       } else if (input.length < code.length) input += k;
@@ -154,11 +163,12 @@
           mistakes -= 1;
           status(`${g.t.mistakes}: ${Math.max(0, mistakes)}`);
           if (mistakes < 0) return finish(false);
-          return;
+          return sound('bad');
         }
         found.push(i);
         c.classList.add('hit');
-        if (r === 'done') finish(true);
+        if (r === 'done') return finish(true);
+        sound('good');
       };
       grid.append(c);
       return c;
@@ -195,16 +205,20 @@
       return li;
     });
     puzzle.colors.forEach((color, i) => {
-      const w = el('div', 'wire');
-      w.style.background = WIRE_HEX[color];
+      const w = el('div', `wire wire-${color}`);
+      w.style.backgroundColor = WIRE_HEX[color];
+      // colour-blind friendly: every colour has its own pattern and its name on the wire
+      if (o.labels !== false) w.append(el('span', 'wire-label', g.t['n_' + color]));
       w.onclick = () => {
         if (g.ended || w.classList.contains('cut')) return;
         const r = M.cutWire(puzzle, done, i);
         w.classList.add('cut');
+        w.append(el('div', 'gap'));
         if (r === 'wrong') { w.classList.add('wrong'); return finish(false); }
         items[done].className = 'done';
         done += 1;
         if (r === 'done') return finish(true);
+        sound('good');
         items[done].className = 'current';
       };
       wireBox.append(w);
@@ -252,10 +266,12 @@
         pinEls[current].className = 'pin current';
         placeZone();
         started = performance.now();
+        sound('good');
       } else {
         lives -= 1;
         status(`${g.t.lives}: ${lives}`);
         if (lives <= 0) return finish(false, g.t.pick_broke);
+        sound('bad');
         flash.textContent = g.t.pick_broke;
       }
     };
@@ -311,6 +327,8 @@
         if (g.ended) return;
         if (selected.includes(i)) selected = selected.filter((s) => s !== i);
         else if (selected.length < 4) selected.push(i);
+        else return;
+        sound('click');
         tiles.forEach((t, j) => t.classList.toggle('selected', selected.includes(j)));
       };
       grid.append(c);
@@ -322,6 +340,7 @@
       lives -= 1;
       status(`${g.t.lives}: ${lives}`);
       if (lives <= 0) return finish(false, g.t.no_match);
+      sound('bad');
       flash.textContent = g.t.no_match;
       selected = [];
       tiles.forEach((t) => t.classList.remove('selected'));

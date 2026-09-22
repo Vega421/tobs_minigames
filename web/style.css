@@ -106,7 +106,19 @@ button:hover { border-color: var(--brand); }
 .wire::before { left: -8px; }
 .wire::after { right: -8px; }
 .wire:hover { outline: 2px solid rgba(255, 255, 255, 0.35); outline-offset: 3px; }
-.wire.cut { cursor: default; background-image: linear-gradient(90deg, transparent 46%, var(--bg) 46%, var(--bg) 54%, transparent 54%); }
+.wire-label { position: absolute; left: 18px; top: 50%; transform: translateY(-50%); font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #fff; text-shadow: 0 0 3px #000, 0 0 2px #000; pointer-events: none; }
+/* A pattern per colour, so the wires differ without colour too */
+.wire-red { background-image: repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.28) 0 3px, transparent 3px 14px); }
+.wire-blue { background-image: repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.25) 0 3px, transparent 3px 10px); }
+.wire-yellow { background-image: radial-gradient(rgba(0, 0, 0, 0.35) 2px, transparent 2.5px); background-size: 10px 16px; }
+.wire-green { background-image: repeating-linear-gradient(-45deg, rgba(0, 0, 0, 0.3) 0 3px, transparent 3px 10px); }
+.wire-white { background-image: linear-gradient(transparent 6px, rgba(0, 0, 0, 0.3) 6px 10px, transparent 10px); }
+.wire-black { background-image: repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.3) 0 8px, transparent 8px 16px); }
+.wire-orange { background-image: repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.3) 0 1px, transparent 1px 5px); }
+.wire-purple { background-image: repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.28) 0 6px, transparent 6px 12px); }
+.wire.cut { cursor: default; }
+.wire.cut .wire-label { opacity: 0.6; }
+.wire.cut > .gap { position: absolute; top: -3px; bottom: -3px; left: 46%; width: 8%; background: var(--panel); }
 .wire.cut:hover { outline: none; }
 .wire.wrong { outline: 2px solid var(--bad); outline-offset: 3px; }
 .clues { margin: 0; padding-left: 22px; line-height: 1.8; }

@@ -29,7 +29,7 @@ One call from your script opens a minigame and tells you whether the player pass
 | **Lockpick** | Set each pin by stopping the pick in its sweet spot |
 | **Fingerprint** | Pick the 4 pieces of a fingerprint from a set with decoys |
 
-The drill, laptop and safe use GTA's own screens, sounds and animations. Every minigame has an easy, medium and hard setting, and every setting can be changed. The web minigames are in English, Danish, German, Swedish, Norwegian and Dutch.
+The drill, laptop and safe use GTA's own screens, sounds and animations, and the web minigames use GTA's hacking sounds (`MG.Sounds`). The wires each show their colour's name and have their own pattern, for colour-blind players (`MG.Wires.labels`). Every minigame has an easy, medium and hard setting, and every setting can be changed. The web minigames are in English, Danish, German, Swedish, Norwegian and Dutch.
 
 ## Use it in your script
 
@@ -117,6 +117,10 @@ The rules of every minigame are tested outside the game on every push:
 lua5.4 tests/main_test.lua && lua5.4 tests/server_test.lua && lua5.4 tests/drill_test.lua && lua5.4 tests/hack_test.lua && lua5.4 tests/safe_test.lua
 node --test tests/web/logic.test.js
 ```
+
+## Preview in a browser
+
+Open `dev/preview.html` (double-click it) to play the web minigames without FiveM: pick the game, difficulty and language. Results and sounds show in the log. It uses the real `web/` files and the settings from `config.lua`; after changing `config.lua` or the texts, run `lua5.4 dev/build_preview.lua`. `dev/` isn't in the release zip.
 
 ## Credits
 

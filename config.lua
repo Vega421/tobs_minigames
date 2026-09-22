@@ -2,6 +2,7 @@ MG = {}
 
 MG.Locale = "en" -- en, da, de, sv, no, nl
 MG.Difficulty = "medium" -- used when a script doesn't pick one: "easy", "medium" or "hard"
+MG.Sounds = true -- GTA's hacking sounds in the web minigames (clicks, right, wrong, success, fail)
 
 -- /minigame <name> [easy|medium|hard] lets anyone try a minigame (it gives nothing). false = off
 MG.TestCommand = "minigame"
@@ -58,8 +59,10 @@ MG.Keypad = {
 }
 
 -- Cut the wires in the order the clues give. A wrong cut fails. wires: wires in the box;
--- cuts: wires to cut; time: seconds
+-- cuts: wires to cut; time: seconds; labels: each wire's colour name on it (every colour also has
+-- its own pattern), for colour-blind players
 MG.Wires = {
+    labels = true,
     easy = {wires = 4, cuts = 2, time = 25},
     medium = {wires = 5, cuts = 3, time = 20},
     hard = {wires = 6, cuts = 4, time = 15},
