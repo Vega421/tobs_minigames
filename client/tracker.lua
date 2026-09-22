@@ -58,6 +58,13 @@ local function Sweep(vehicle)
     return result, reason
 end
 
+MGSweepVehicle = Sweep -- for the test menu
+MGNotify = function(key)
+    BeginTextCommandThefeedPost("STRING")
+    AddTextComponentSubstringPlayerName(ML(key))
+    EndTextCommandThefeedPostTicker(false, false)
+end
+
 exports("SweepVehicle", function(vehicle, cb)
     if type(cb) ~= "function" then return (Sweep(vehicle)) end
     Citizen.CreateThread(function() cb(Sweep(vehicle)) end)

@@ -144,7 +144,11 @@ The "faster than possible" limits are in `MG.MinTime` in `config.lua`.
 
 1. Download the latest release and put `tobs_minigames` in your `resources` folder.
 2. Add `ensure tobs_minigames` to `server.cfg`, before the scripts that use it.
-3. Try each one in game with `/minigame keypad hard` (turn off with `MG.TestCommand = false`).
+3. Test them in game with `/minigame` (see below).
+
+## Testing in game
+
+Type **`/minigame`** for the test menu: every minigame with its last result ("✓ Passed · 12.4 s · hard", failed, or a GTA screen that didn't load), a difficulty and a look to test with, and **Play all** to go through all twelve in a row (ESC in a game stops the run). The results also go to the F8 console. The menu can also put a test tracker on the nearest vehicle (admins, with `add_ace group.admin command.tobtracker allow`) and sweep it, to test the trackers on vehicles. `/minigame keypad hard` plays one straight away. Nothing is given or taken; `MG.TestCommand = false` turns it off.
 
 ## The window
 
@@ -171,7 +175,7 @@ Everything is in `config.lua`: the language (`MG.Locale`), the default difficult
 The rules of every minigame are tested outside the game on every push:
 
 ```bash
-lua5.4 tests/main_test.lua && lua5.4 tests/server_test.lua && lua5.4 tests/sweep_test.lua && lua5.4 tests/drill_test.lua && lua5.4 tests/hack_test.lua && lua5.4 tests/safe_test.lua
+lua5.4 tests/main_test.lua && lua5.4 tests/server_test.lua && lua5.4 tests/sweep_test.lua && lua5.4 tests/testmenu_test.lua && lua5.4 tests/drill_test.lua && lua5.4 tests/hack_test.lua && lua5.4 tests/safe_test.lua
 node --test tests/web/logic.test.js
 ```
 

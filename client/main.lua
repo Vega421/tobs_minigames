@@ -27,18 +27,20 @@
 
 local Active = false
 local Pending -- the web game's promise while one is open
+local GaveUp = false -- the last web game ended with ESC (the test menu's "Play all" stops then)
 
-local function Finish(success)
+local function Finish(success, gaveUp)
     local p = Pending
     if p == nil then return end
     Pending = nil
+    GaveUp = gaveUp == true
     SetNuiFocus(false, false)
     SendNUIMessage({action = "close"})
     p:resolve(success == true)
 end
 
 RegisterNUICallback("done", function(data, cb)
-    Finish(type(data) == "table" and data.success == true)
+    Finish(type(data) == "table" and data.success == true, type(data) == "table" and data.gaveUp == true)
     cb({})
 end)
 
@@ -56,11 +58,12 @@ end)
 
 -- Opens a web game and waits for its result. It also ends (failed) if the player dies, or if the
 -- page never answers well after the game's time limit.
-local function RunWeb(name, o)
+local function RunWeb(name, o, style)
     local p = promise.new()
     Pending = p
+    GaveUp = false
     SetNuiFocus(true, true) -- before opening, so an answer can never leave the focus on
-    SendNUIMessage({action = "open", game = name, opts = o, text = MGTexts(), theme = MG.Theme, style = MG.Style,
+    SendNUIMessage({action = "open", game = name, opts = o, text = MGTexts(), theme = MG.Theme, style = style or MG.Style,
         ui = {scale = MG.Scale, intro = MG.Intro, textSize = MG.TextSize, reducedMotion = MG.ReducedMotion}})
     local ped = PlayerPedId()
     local limit = (o.time or 240) + (o.show or 0) / 1000 + (tonumber(MG.Intro) or 0) + 15
@@ -74,7 +77,8 @@ local function RunWeb(name, o)
     return Citizen.Await(p)
 end
 
-local function Run(name, opts)
+-- style: only for the test menu, to try a look without changing the config
+local function Run(name, opts, style)
     local game = MGName(name)
     if game == nil then
         print(("^1[tobs_minigames] Unknown minigame '%s'. Use: drill, hack, safe, thermite, keypad, wires, lockpick, fingerprint, hotwire, lasers, keyfiling, tracker^7"):format(tostring(name)))
@@ -87,7 +91,7 @@ local function Run(name, opts)
         if game == "drill" then return MGDrill.Start(o) end
         if game == "hack" then return MGHack.Start(o) end
         if game == "safe" then return MGSafe.Start(o) end
-        return RunWeb(game, o)
+        return RunWeb(game, o, style)
     end)
     Active = false
     if not ok then
@@ -117,6 +121,11 @@ end
 exports("Start", Call)
 exports("IsActive", function() return Active end)
 
+-- For the test menu (client/testmenu.lua)
+MGRun = Run
+MGGaveUp = function() return GaveUp end
+MGIsActive = function() return Active end
+
 -- The server asks for a game (exports.tobs_minigames:Play) and gets the result back
 RegisterNetEvent("tobs_minigames:play")
 AddEventHandler("tobs_minigames:play", function(id, name, opts)
@@ -126,15 +135,16 @@ AddEventHandler("tobs_minigames:play", function(id, name, opts)
     end)
 end)
 
--- /minigame <name> [difficulty]: try one (it gives nothing)
+-- /minigame <name> [difficulty]: try one (it gives nothing). /minigame alone: the test menu
 local function Chat(text)
     TriggerEvent("chat:addMessage", {args = {"tobs_minigames", text}})
 end
 
 if MG.TestCommand then
     RegisterCommand(MG.TestCommand, function(_, args)
+        if args[1] == nil then MGOpenTestMenu() return end
         local name = MGName(args[1])
-        if name == nil then Chat(ML("test_usage", MG.TestCommand)) return end
+        if name == nil then Chat(ML("test_usage", MG.TestCommand, MG.TestCommand)) return end
         Call(name, args[2], function(result)
             if result == nil then Chat(ML("test_no_screen", name))
             elseif result then Chat(ML("test_passed", name))

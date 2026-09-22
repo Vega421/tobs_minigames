@@ -52,7 +52,7 @@
 
   // A short effect on the panel: "shake" for a mistake, "pulse" for a right step
   function effect(name) {
-    const panel = document.querySelector('.panel');
+    const panel = document.querySelector('#mg .panel');
     panel.classList.remove('fx-shake', 'fx-pulse');
     void panel.offsetWidth; // restart the animation
     panel.classList.add(`fx-${name}`);
@@ -76,7 +76,7 @@
     game.timerEnd = null;
     $('mg-timer').style.transform = 'scaleX(1)';
     $('mg-time').textContent = '';
-    document.querySelector('.panel').classList.remove('low-time');
+    document.querySelector('#mg .panel').classList.remove('low-time');
   }
 
   function loop(now) {
@@ -89,7 +89,7 @@
         const secs = Math.max(0, Math.min(Math.round(game.timerLength / 1000), Math.ceil(left / 1000)));
         $('mg-time').textContent = `${secs} s`;
         const low = left <= Math.min(5000, game.timerLength * 0.3);
-        document.querySelector('.panel').classList.toggle('low-time', low);
+        document.querySelector('#mg .panel').classList.toggle('low-time', low);
         if (low && secs > 0 && secs !== game.lastTick) { game.lastTick = secs; post('sound', { name: 'move' }); }
       }
       if (left <= 0 && game.timerFails) { finish(false, game.t.time_up); return; }
@@ -97,6 +97,13 @@
     }
     if (game.frame) game.frame(now);
     requestAnimationFrame(loop);
+  }
+
+  // ESC: failed, and the test menu's "Play all" stops
+  function giveUp() {
+    if (!game || game.ended) return;
+    game.gaveUp = true;
+    finish(false);
   }
 
   // The end: "Success · 12.4 s" or "Failed · the reason"
@@ -110,9 +117,10 @@
     if (took && success) sub.push(fmt(game.t.took, took));
     $('mg-result-sub').textContent = sub.join(' · ');
     $('mg-result').className = success ? 'good' : 'bad';
-    document.querySelector('.panel').classList.remove('low-time');
+    document.querySelector('#mg .panel').classList.remove('low-time');
     sound(success ? 'success' : 'fail');
-    setTimeout(() => post('done', { success }), 1200);
+    const gaveUp = game.gaveUp === true;
+    setTimeout(() => post('done', { success, gaveUp }), 1200);
   }
 
   // MG.Style from config.lua: a class on the page that style.css turns into a look
@@ -134,14 +142,16 @@
   // MG.Scale: the same share of the screen on any resolution (made for 1080p), never bigger than
   // fits. In the preview (ui.fit) it just fills the frame.
   let ui = {};
-  function applyScale() {
-    const panel = document.querySelector('.panel');
+  function applyScale(panel = document.querySelector('#mg .panel')) {
     panel.style.transform = 'none';
     const fit = Math.min((innerWidth - 32) / panel.offsetWidth, (innerHeight - 32) / panel.offsetHeight);
     const wanted = ui.fit ? 1.15 : (Number(ui.scale) || 1) * (innerHeight / 1080);
     panel.style.transform = `scale(${Math.max(0.3, Math.min(wanted, fit))})`;
   }
-  window.addEventListener('resize', () => { if (game) applyScale(); });
+  window.addEventListener('resize', () => {
+    if (game) applyScale();
+    if (menuOpen) applyScale($('mg-menu-panel'));
+  });
   // How much the panel is scaled on screen (for positions measured with getBoundingClientRect)
   const panelScale = (node) => node.getBoundingClientRect().width / node.offsetWidth || 1;
 
@@ -157,7 +167,7 @@
     game.started = true;
     clearInterval(game.introTimer);
     $('mg-intro').classList.add('hidden');
-    document.querySelector('.panel').classList.remove('intro');
+    document.querySelector('#mg .panel').classList.remove('intro');
     game.startedAt = performance.now();
     Games[game.name](game);
     applyScale();
@@ -169,7 +179,7 @@
     applyTheme(data.theme);
     applyUi(data.ui);
     game = { name: data.game, o: data.opts || {}, t, ended: false, rand: M.random(data.opts && data.opts.seed) };
-    const panel = document.querySelector('.panel');
+    const panel = document.querySelector('#mg .panel');
     panel.className = `panel game-${data.game}`;
     $('mg-title').textContent = t['title_' + data.game] || data.game;
     setText($('mg-hint'), '');
@@ -868,17 +878,110 @@
     startTimer(o.time || 35);
   };
 
+  // TEST MENU (/minigame): every game with its last result, difficulty and look for the test,
+  // play one or all, and the tracker-on-a-vehicle test. client/testmenu.lua does the work.
+  let menuOpen = false, menuState = null;
+  function openMenu(d) {
+    applyStyle(d.style);
+    applyTheme(d.theme);
+    applyUi(d.ui);
+    menuOpen = true;
+    menuState = { difficulty: d.difficulty, style: d.style };
+    const t = d.text;
+    let root = $('mg-menu');
+    if (!root) { root = el('div'); root.id = 'mg-menu'; document.body.append(root); }
+    root.innerHTML = '';
+    root.className = '';
+    const panel = el('div', 'panel menu-panel');
+    panel.id = 'mg-menu-panel';
+    const head = el('header');
+    head.append(el('h1', '', t.menu_title));
+    const x = el('button', 'menu-close', t.close);
+    x.onclick = () => post('menuClose', {});
+    head.append(x);
+    panel.append(head, el('p', 'menu-hint', t.menu_hint));
+
+    // difficulty and look
+    const row = (label, values, current, key, names) => {
+      const r = el('div', 'menu-row');
+      r.append(el('span', 'menu-label', label));
+      const seg = el('div', 'seg');
+      values.forEach((v) => {
+        const b = el('button', v === current ? 'on' : '', names ? names(v) : v);
+        b.onclick = () => {
+          menuState[key] = v;
+          seg.querySelectorAll('button').forEach((o) => o.classList.toggle('on', o === b));
+          if (key === 'style') applyStyle(v);
+          post('menuSettings', menuState);
+          post('sound', { name: 'click' });
+        };
+        seg.append(b);
+      });
+      r.append(seg);
+      return r;
+    };
+    panel.append(row(t.difficulty, ['easy', 'medium', 'hard'], d.difficulty, 'difficulty'));
+    panel.append(row(t.look, d.styles || ['default', 'terminal', 'glass'], d.style, 'style'));
+
+    // one card per game
+    const grid = el('div', 'menu-grid');
+    for (const g of d.games || []) {
+      const card = el('button', 'menu-card');
+      const name = el('span', 'menu-name', t['title_' + g.name] || g.name);
+      if (g.gta) name.append(el('span', 'badge', 'GTA'));
+      let res;
+      if (!g.played) res = el('span', 'menu-res', t.not_played);
+      else if (g.result === true) res = el('span', 'menu-res good', `✓ ${t.passed} · ${fmt(t.took, (g.ms / 1000).toFixed(1))} · ${g.difficulty}`);
+      else if (g.result === false) res = el('span', 'menu-res bad', `✗ ${t.failed} · ${g.difficulty}`);
+      else res = el('span', 'menu-res muted', `– ${t.no_screen}`);
+      card.append(name, res);
+      card.onclick = () => post('menuPlay', { game: g.name, difficulty: menuState.difficulty, style: menuState.style });
+      grid.append(card);
+    }
+    panel.append(grid);
+
+    const all = el('button', 'menu-all', t.play_all);
+    all.onclick = () => post('menuAll', menuState);
+    panel.append(all);
+
+    // trackers on vehicles
+    const tr = el('div', 'menu-tracker');
+    tr.append(el('span', 'menu-label', t.tracker_test));
+    const place = el('button', '', t.tracker_place);
+    place.onclick = () => post('menuTracker', { action: 'place' });
+    const sweep = el('button', '', t.tracker_sweep);
+    sweep.onclick = () => post('menuTracker', { action: 'sweep' });
+    tr.append(place, sweep);
+    panel.append(tr);
+
+    const foot = el('footer');
+    const esc = el('span');
+    setText(esc, t.give_up.replace(/\s.*$/, '') + ' ' + t.close);
+    foot.append(esc);
+    panel.append(foot);
+    root.append(panel);
+    applyScale(panel);
+  }
+  function closeMenu() {
+    menuOpen = false;
+    const root = $('mg-menu');
+    if (root) root.className = 'hidden';
+  }
+
   window.addEventListener('message', (e) => {
     const d = e.data || {};
-    if (d.action === 'open' && Games[d.game]) open(d);
+    if (d.action === 'open' && Games[d.game]) { closeMenu(); open(d); }
     else if (d.action === 'close') close();
+    else if (d.action === 'menu') openMenu(d);
+    else if (d.action === 'menu_close') closeMenu();
   });
 
   document.addEventListener('keyup', (e) => { if (game && game.onKeyUp) game.onKeyUp(e); });
 
   document.addEventListener('keydown', (e) => {
+    if (menuOpen && !game && e.key === 'Escape') return post('menuClose', {});
     if (!game || game.ended) return;
-    if (e.key === 'Escape') return finish(false);
+    if (e.key === 'Escape') return giveUp();
     if (!game.started) {
       if (e.code === 'Space' || e.key === 'Enter') { e.preventDefault(); startGame(); }
       return;

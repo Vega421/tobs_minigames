@@ -19,6 +19,7 @@ client_scripts {
     "client/safe.lua",
     "client/main.lua",
     "client/tracker.lua",
+    "client/testmenu.lua",
 }
 
 server_scripts {

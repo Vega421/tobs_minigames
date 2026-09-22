@@ -92,3 +92,42 @@ end)
 AddEventHandler("playerDropped", function()
     Sweeping[source] = nil
 end)
+
+-- TESTING: put a tracker on the vehicle an admin is in, or the nearest one within 10 m. From the
+-- test menu (/minigame) or /tobtracker [easy|medium|hard]; needs the ace command.tobtracker.
+local Levels = {easy = true, medium = true, hard = true}
+
+local function NearestVehicle(src)
+    local ped = GetPlayerPed(src)
+    if not ped or ped == 0 then return nil end
+    local inside = GetVehiclePedIsIn(ped, false)
+    if inside and inside ~= 0 then return inside end
+    local here = GetEntityCoords(ped)
+    local best, bestDist = nil, 10.0
+    for _, veh in ipairs(GetAllVehicles()) do
+        local d = #(here - GetEntityCoords(veh))
+        if d < bestDist then best, bestDist = veh, d end
+    end
+    return best
+end
+
+local function TestTracker(src, difficulty)
+    if not IsPlayerAceAllowed(tostring(src), "command.tobtracker") then
+        return TriggerClientEvent("tobs_minigames:testNotice", src, "not_allowed")
+    end
+    local veh = NearestVehicle(src)
+    if not veh then return TriggerClientEvent("tobs_minigames:testNotice", src, "no_vehicle_near") end
+    SetVehicleTracker(veh, {difficulty = Levels[difficulty] and difficulty or MG.Sweep.difficulty, test = true})
+    print(("[tobs_minigames] %s put a test tracker on vehicle %d"):format(GetPlayerName(src) or src, veh))
+    TriggerClientEvent("tobs_minigames:testNotice", src, "tracker_placed")
+end
+
+RegisterNetEvent("tobs_minigames:testTracker")
+AddEventHandler("tobs_minigames:testTracker", function(difficulty)
+    TestTracker(source, difficulty)
+end)
+
+RegisterCommand("tobtracker", function(src, args)
+    if src == 0 then print("[tobs_minigames] /tobtracker is for players in the game.") return end
+    TestTracker(src, args[1])
+end, true)

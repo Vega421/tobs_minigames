@@ -329,3 +329,26 @@ canvas.car { cursor: crosshair; }
 .style-glass .cell, .style-glass .hw-term { border-radius: 10px; }
 .style-glass .wire-box, .style-glass .track, .style-glass .meter, .style-glass canvas { border-radius: 14px; }
 .style-glass #mg-result { border-radius: var(--radius); background: rgba(22, 26, 38, 0.7); backdrop-filter: blur(8px); }
+
+/* Test menu (/minigame) */
+#mg-menu { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.35); }
+.menu-panel { width: 760px; animation: open 0.22s ease-out; }
+.menu-panel header { align-items: center; }
+.menu-close { padding: 6px 12px; }
+.menu-hint { margin: 8px 0 14px; color: var(--muted); font-size: calc(13px * var(--text-scale)); }
+.menu-row { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+.menu-label { min-width: 110px; color: var(--muted); font-size: calc(13px * var(--text-scale)); }
+.seg { display: flex; gap: 6px; }
+.seg button { padding: 6px 14px; font-size: calc(13px * var(--text-scale)); text-transform: capitalize; }
+.seg button.on { border-color: var(--brand); color: var(--brand); }
+.menu-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 14px 0; }
+.menu-card { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; padding: 10px 12px; text-align: left; }
+.menu-name { font-weight: 700; font-size: calc(14px * var(--text-scale)); display: flex; align-items: center; gap: 6px; }
+.badge { font-size: 10px; font-weight: 800; padding: 1px 5px; border-radius: 4px; background: var(--brand); color: #111; letter-spacing: 0.04em; }
+.menu-res { font-size: calc(12px * var(--text-scale)); color: var(--muted); }
+.menu-res.good { color: var(--good); }
+.menu-res.bad { color: var(--bad); }
+.menu-all { width: 100%; padding: 10px; font-weight: 700; background: var(--brand); border-color: var(--brand); color: #111; }
+.menu-tracker { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); }
+.menu-tracker button { padding: 7px 12px; font-size: calc(13px * var(--text-scale)); }
+.style-terminal .menu-all { color: #020803; }
