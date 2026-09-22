@@ -1,105 +1,124 @@
-# tobs_minigames: exports, events and commands
+# tobs_minigames: exports
 
-Everything another script can use. Game settings and their defaults are in `config.lua`.
+Everything your script can call. Default settings are in `config.lua`.
 
-- [Client exports](#client-exports): play a minigame, sweep a vehicle
-- [Server exports](#server-exports): play a minigame from the server, trackers on vehicles
-- [Events](#events)
-- [Commands](#commands)
-- [Game names and settings](#game-names-and-settings)
+## At a glance
 
-## Client exports
+| Export | Side | What it does |
+| ------ | :--: | ------------ |
+| `Keypad()`, `Wires()`, `Lasers()`, … | client | Play a minigame ([all 12](#the-12-minigames)) |
+| `Start(name)` | client | Play a minigame by name |
+| `IsActive()` | client | Is a minigame open right now? |
+| `SweepVehicle(vehicle)` | client | Sweep a car for a GPS tracker |
+| `Play(playerId, name)` | server | Play a minigame and get the result on the server |
+| `SetVehicleTracker(vehicle)` | server | Put a GPS tracker on a car |
+| `GetVehicleTracker(vehicle)` | server | Does the car have a tracker? |
+| `RemoveVehicleTracker(vehicle)` | server | Take the tracker off |
 
-### The minigames
+## Cheat sheet
 
 ```lua
-exports.tobs_minigames:Drill(opts, cb)        -- GTA's Fleeca drilling screen
-exports.tobs_minigames:Hack(opts, cb)         -- GTA's hacking laptop (HackConnect + BruteForce)
-exports.tobs_minigames:Safe(opts, cb)         -- GTA V's safe dial
-exports.tobs_minigames:Thermite(opts, cb)
-exports.tobs_minigames:Keypad(opts, cb)
-exports.tobs_minigames:Wires(opts, cb)
-exports.tobs_minigames:Lockpick(opts, cb)
-exports.tobs_minigames:Fingerprint(opts, cb)
-exports.tobs_minigames:Hotwire(opts, cb)
-exports.tobs_minigames:Lasers(opts, cb)
-exports.tobs_minigames:KeyFiling(opts, cb)
-exports.tobs_minigames:Tracker(opts, cb)
-exports.tobs_minigames:Start(name, opts, cb)  -- any of them by name, e.g. "keypad" (any case)
+-- CLIENT (inside a thread)
+local passed = exports.tobs_minigames:Keypad()                  -- normal difficulty
+local passed = exports.tobs_minigames:Wires("hard")              -- easy / medium / hard
+local passed = exports.tobs_minigames:Lockpick({pins = 6})       -- your own settings
+local passed = exports.tobs_minigames:Start("thermite", "easy")  -- by name
+
+-- CLIENT (with a callback: no thread needed)
+exports.tobs_minigames:Hotwire("easy", function(passed) end)
+
+-- SERVER (use this when the result pays out)
+local passed = exports.tobs_minigames:Play(source, "safe", "hard")
 ```
 
-**`opts`** (optional):
+---
 
-| Value | Meaning |
-| ----- | ------- |
-| `nil` | The default difficulty (`MG.Difficulty`) |
-| `"easy"`, `"medium"`, `"hard"` | That difficulty |
-| a table | A difficulty plus your own settings: `{difficulty = "hard", pins = 6, time = 30}`. Any setting from `config.lua` can be changed for this one call |
+## Playing a minigame
 
-Two extra settings work in the table:
-
-| Setting | Meaning |
-| ------- | ------- |
-| `fallback = "lockpick"` | If a GTA screen (drill, hack, safe) doesn't load, play this game instead, at the same difficulty |
-| `seed = 4` | Web games only: the same puzzle every time (for testing) |
-
-**`cb`** (optional): `function(result) end`. With a callback the export returns at once and calls it when the game ends; without one, call it inside a thread and it waits.
-
-**Returns** (or passes to `cb`):
-
-| Result | Meaning |
-| ------ | ------- |
-| `true` | Passed |
-| `false` | Failed, gave up (ESC / Backspace), died, or another minigame was already open |
-| `nil` | A GTA screen (drill, hack, safe) didn't load and there was no `fallback` |
+### Three ways to call it
 
 ```lua
-Citizen.CreateThread(function()
-    if exports.tobs_minigames:Wires("hard") then
-        TriggerServerEvent("myscript:wiresCut")
-    end
-end)
+-- 1. Wait for the result (inside a thread)
+local passed = exports.tobs_minigames:Wires("hard")
 
-exports.tobs_minigames:Lockpick({difficulty = "easy", pins = 5}, function(passed)
-    print("lockpick", passed)
-end)
+-- 2. Get the result in a callback (returns at once)
+exports.tobs_minigames:Wires("hard", function(passed) end)
 
+-- 3. By name
+local passed = exports.tobs_minigames:Start("wires", "hard")
+```
+
+### Settings for one call
+
+- Nothing → the normal difficulty (`MG.Difficulty`)
+- `"easy"`, `"medium"` or `"hard"`
+- A table → a difficulty plus any setting from `config.lua`:
+
+```lua
+exports.tobs_minigames:Lockpick({difficulty = "hard", pins = 6, time = 30})
+```
+
+Two extra settings:
+
+- `fallback = "lockpick"`: if a GTA screen (drill, hack, safe) doesn't load, play this instead
+- `seed = 4`: the same puzzle every time (web games, for testing)
+
+### The result
+
+- `true`: **passed**
+- `false`: **failed**, gave up, died, or another minigame was already open
+- `nil`: a GTA screen didn't load (and there was no `fallback`)
+
+### The drill
+
+The drill can never be finished faster than its `time`, so use it **instead of** a progress bar:
+
+```lua
 local drilled = exports.tobs_minigames:Drill({time = 15000, fallback = "lockpick"})
 ```
 
-The drill can never be finished faster than its `time` (ms), so use it **instead of** a progress bar, not before one.
+---
 
-### IsActive
+## From the server: `Play`
 
-```lua
-exports.tobs_minigames:IsActive()   -- true while a minigame is open
-```
-
-### SweepVehicle
-
-Sweeps a vehicle for a tracker put on it with [`SetVehicleTracker`](#setvehicletracker) (server). The player looks at their phone, the tracker minigame runs (through the server), and a GTA notification shows the result.
+Runs the minigame in the player's game and gives you the result on the server. **Use this when the result pays out.**
 
 ```lua
-local removed = exports.tobs_minigames:SweepVehicle(vehicle)                       -- inside a thread
-exports.tobs_minigames:SweepVehicle(vehicle, function(removed, reason) end)       -- or with a callback
+local passed = exports.tobs_minigames:Play(source, "safe", "hard")
+if passed then
+    -- pay the player
+end
 ```
 
-| Argument | Meaning |
-| -------- | ------- |
-| `vehicle` | The vehicle entity (client handle) |
-| `cb` | Optional `function(removed, reason)` |
+Or with a callback: `exports.tobs_minigames:Play(source, "keypad", nil, function(passed) end)`
 
-**Returns** `true` when the tracker was found and removed, otherwise `false`. The callback also gets the reason:
+What the server checks for you:
 
-| Reason | Meaning |
-| ------ | ------- |
-| `"removed"` | Found and removed |
-| `"missed"` | The minigame failed; the tracker stays |
-| `"no_tracker"` | The vehicle has no tracker (after `MG.Sweep.scan` ms of scanning) |
-| `"too_far"` | Further than `MG.Sweep.distance` from the vehicle |
-| `"gone"` | Someone else removed it first |
-| `"no_vehicle"` | Not a vehicle, or it doesn't exist |
-| `"busy"` | A sweep is already running |
+- Only the one answer it asked for, from that player, counts
+- An answer that came faster than the game can be played counts as **failed** (limits: `MG.MinTime`)
+- The player leaves, or nothing comes back in 10 minutes → **failed**
+
+Still check what matters for your payout (distance, state) in your own script.
+
+---
+
+## Trackers on vehicles
+
+Put a GPS tracker on a car from the server. Players sweep for it with the tracker minigame. Your script hears when it's removed.
+
+**Server: put one on**
+
+```lua
+exports.tobs_minigames:SetVehicleTracker(vehicle, {difficulty = "hard", job = jobId})
+
+AddEventHandler("tobs_minigames:trackerRemoved", function(playerId, vehicle, info)
+    -- info.job: stop the police GPS
+end)
+```
+
+`vehicle` can be the entity or its network id. Anything you put in the table comes back as `info`.
+
+**Client: sweep for it**
 
 ```lua
 exports.ox_target:addGlobalVehicle({{
@@ -108,102 +127,98 @@ exports.ox_target:addGlobalVehicle({{
 }})
 ```
 
-## Server exports
+`SweepVehicle` returns `true` when the tracker was removed. The player sees a notification either way.
 
-### Play
-
-Runs a minigame for a player and gets the result **on the server**, where payouts happen. Use this when the result pays out.
-
-```lua
-local passed = exports.tobs_minigames:Play(playerId, "safe", "hard")              -- inside a thread
-exports.tobs_minigames:Play(playerId, "keypad", nil, function(passed) end)         -- or with a callback
-exports.tobs_minigames:Play(playerId, "wires", function(passed) end)               -- the callback can replace opts
-```
-
-| Argument | Meaning |
-| -------- | ------- |
-| `playerId` | The player's server id |
-| `name` | A [game name](#game-names-and-settings) |
-| `opts` | Like the client exports: `nil`, a difficulty, or a table |
-| `cb` | Optional `function(result)` |
-
-**Returns** `true`, `false` or `nil`, like the client exports. The server only accepts the one answer it asked for, from that player; an answer that came back faster than the game can be played (`MG.MinTime`) counts as `false`; if the player leaves or nothing comes back within 10 minutes, the result is `false`. An unknown game or a player who isn't online gives `false` at once.
-
-The result is still decided in the player's game, so keep checking what matters for your payout (distance, state) as usual.
-
-### SetVehicleTracker
-
-Puts a tracker on a vehicle. Players sweep for it with [`SweepVehicle`](#sweepvehicle).
+<details>
+<summary>All tracker exports and the sweep's reasons</summary>
 
 ```lua
-exports.tobs_minigames:SetVehicleTracker(vehicle, {difficulty = "hard", job = jobId})
+exports.tobs_minigames:SetVehicleTracker(vehicle, info)   -- server: true, or false if no such vehicle
+exports.tobs_minigames:GetVehicleTracker(vehicle)         -- server: the info table, or nil
+exports.tobs_minigames:RemoveVehicleTracker(vehicle)      -- server: true, or false if no such vehicle
+exports.tobs_minigames:SweepVehicle(vehicle, function(removed, reason) end)   -- client
 ```
 
-| Argument | Meaning |
-| -------- | ------- |
-| `vehicle` | The vehicle entity (server handle) or its network id |
-| `info` | Optional table: `difficulty` for the tracker minigame (default `MG.Sweep.difficulty`), plus anything your script wants back in the events |
+The callback's `reason`:
 
-**Returns** `true`, or `false` if the vehicle doesn't exist. The tracker is kept in the vehicle's state bag (`tobsTracker`), which only the server can change.
+- `"removed"`: found and removed
+- `"missed"`: the minigame failed; the tracker stays
+- `"no_tracker"`: the car has no tracker
+- `"too_far"`: too far from the car (`MG.Sweep.distance`)
+- `"gone"`: someone else removed it first
+- `"no_vehicle"`: not a car
+- `"busy"`: already sweeping
 
-### GetVehicleTracker
+</details>
 
-```lua
-local info = exports.tobs_minigames:GetVehicleTracker(vehicle)   -- the info table, or nil
-```
-
-### RemoveVehicleTracker
-
-```lua
-exports.tobs_minigames:RemoveVehicleTracker(vehicle)   -- true, or false if the vehicle doesn't exist
-```
+---
 
 ## Events
 
-| Event | Side | Arguments | When |
-| ----- | ---- | --------- | ---- |
-| `tobs_minigames:finished` | client | `name, result` | Any minigame ended on this client |
-| `tobs_minigames:played` | server | `playerId, name, result, ms, reason` | A `Play` ended. `reason`: `"answered"`, `"too_fast"`, `"left"` (the player left) or `"no_answer"` (10 minutes) |
-| `tobs_minigames:trackerRemoved` | server | `playerId, vehicle, info` | A player found and removed a tracker (`vehicle` is the server entity, `info` what you gave `SetVehicleTracker`) |
-| `tobs_minigames:trackerMissed` | server | `playerId, vehicle, info` | A sweep's minigame failed; the tracker stays |
+| Event | Side | You get |
+| ----- | :--: | ------- |
+| `tobs_minigames:finished` | client | `name, result`: any minigame ended |
+| `tobs_minigames:played` | server | `playerId, name, result, ms, reason`: a `Play` ended |
+| `tobs_minigames:trackerRemoved` | server | `playerId, vehicle, info`: a tracker was removed |
+| `tobs_minigames:trackerMissed` | server | `playerId, vehicle, info`: a sweep failed |
+
+`reason` in `played` is `"answered"`, `"too_fast"`, `"left"` or `"no_answer"`.
 
 ```lua
--- server: log every minigame played through Play
 AddEventHandler("tobs_minigames:played", function(playerId, name, result, ms, reason)
-    print(("%s played %s: %s in %d ms (%s)"):format(GetPlayerName(playerId), name, tostring(result), ms, reason))
-end)
-
--- server: a boosted car's tracker was removed
-AddEventHandler("tobs_minigames:trackerRemoved", function(playerId, vehicle, info)
-    -- stop the police GPS for info.job ...
+    print(GetPlayerName(playerId), name, result, ms, reason)
 end)
 ```
+
+---
 
 ## Commands
 
 | Command | Who | What |
 | ------- | --- | ---- |
-| `/minigame` | everyone (`MG.TestCommand`, `false` = off) | The test menu: every game with its last result, difficulty and look to test with, Play all, and the tracker test |
-| `/minigame <name> [easy\|medium\|hard]` | everyone | Plays one game straight away |
-| `/tobtracker [easy\|medium\|hard]` | admins: `add_ace group.admin command.tobtracker allow` | Puts a test tracker on the vehicle you're in, or the nearest one within 10 m |
+| `/minigame` | everyone | Test menu: play one or all games, see the results |
+| `/minigame wires hard` | everyone | Play one game straight away |
+| `/tobtracker hard` | admins | Put a test tracker on the nearest car |
 
-Nothing is given or taken by the test commands.
+`/tobtracker` needs `add_ace group.admin command.tobtracker allow`. The test commands give nothing. `MG.TestCommand = false` turns `/minigame` off.
 
-## Game names and settings
+---
 
-Use these names with `Start`, `Play` and `fallback`. Each game's settings (in `config.lua`, per difficulty) can be changed for one call through `opts`.
+## The 12 minigames
 
-| Name | Export | Settings |
-| ---- | ------ | -------- |
-| `"drill"` | `Drill` | `time` (ms, the shortest possible drill), `heat`, `cool`, `minSpeed`, `pins` (depths 0–1), `shake` |
-| `"hack"` | `Hack` | `lives`, `timeLimit` (s), `ipConnect`, `background` (0–6), `columnSpeed` (`{min, max}`), `words` |
-| `"safe"` | `Safe` | `numbers`, `tolerance`, `lives`, `time` (s), `speed`, `slowSpeed`, `animate`, `combination` (your own numbers, 0–99) |
-| `"thermite"` | `Thermite` | `size`, `squares`, `show` (ms), `mistakes`, `time` (s) |
-| `"keypad"` | `Keypad` | `length`, `show` (ms), `time` (s), `attempts` |
-| `"wires"` | `Wires` | `wires`, `cuts`, `time` (s), `labels` |
-| `"lockpick"` | `Lockpick` | `pins`, `zone`, `speed`, `lives`, `time` (s, optional) |
-| `"fingerprint"` | `Fingerprint` | `decoys`, `time` (s), `lives` |
-| `"hotwire"` | `Hotwire` | `wires`, `tricky`, `mistakes`, `time` (s) |
-| `"lasers"` | `Lasers` | `walls`, `sweepers`, `speed`, `gap`, `move`, `lives`, `time` (s) |
-| `"keyfiling"` | `KeyFiling` | `cuts`, `tolerance`, `speed`, `lives`, `time` (s) |
-| `"tracker"` | `Tracker` | `decoys`, `radius`, `lives`, `time` (s) |
+| Name | Export | What the player does |
+| ---- | ------ | -------------------- |
+| `drill` | `Drill` | GTA's drill: push through the pins without overheating |
+| `hack` | `Hack` | GTA's hacking laptop: HackConnect, then BruteForce |
+| `safe` | `Safe` | GTA's safe dial: turn back on each click |
+| `thermite` | `Thermite` | Click the squares that lit up |
+| `keypad` | `Keypad` | Type the code you saw |
+| `wires` | `Wires` | Cut the wires in the right order |
+| `lockpick` | `Lockpick` | Stop the pick in each sweet spot |
+| `fingerprint` | `Fingerprint` | Pick the 4 pieces of the print |
+| `hotwire` | `Hotwire` | Connect each wire to its colour's name |
+| `lasers` | `Lasers` | Cross the room without touching a laser |
+| `keyfiling` | `KeyFiling` | File each cut down to its line |
+| `tracker` | `Tracker` | Find the hidden tracker by its signal |
+
+<details>
+<summary>Every game's settings (change them per call, or in config.lua)</summary>
+
+| Game | Settings |
+| ---- | -------- |
+| `drill` | `time` (ms, shortest drill), `heat`, `cool`, `minSpeed`, `pins`, `shake` |
+| `hack` | `lives`, `timeLimit` (s), `ipConnect`, `background` (0–6), `columnSpeed`, `words` |
+| `safe` | `numbers`, `tolerance`, `lives`, `time` (s), `speed`, `slowSpeed`, `animate`, `combination` |
+| `thermite` | `size`, `squares`, `show` (ms), `mistakes`, `time` (s) |
+| `keypad` | `length`, `show` (ms), `time` (s), `attempts` |
+| `wires` | `wires`, `cuts`, `time` (s), `labels` |
+| `lockpick` | `pins`, `zone`, `speed`, `lives`, `time` (s, optional) |
+| `fingerprint` | `decoys`, `time` (s), `lives` |
+| `hotwire` | `wires`, `tricky`, `mistakes`, `time` (s) |
+| `lasers` | `walls`, `sweepers`, `speed`, `gap`, `move`, `lives`, `time` (s) |
+| `keyfiling` | `cuts`, `tolerance`, `speed`, `lives`, `time` (s) |
+| `tracker` | `decoys`, `radius`, `lives`, `time` (s) |
+
+What each setting does is explained next to it in `config.lua`.
+
+</details>
