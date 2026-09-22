@@ -95,6 +95,31 @@ local function Minigame(name, opts)
 end
 ```
 
+### Trackers on vehicles (a ready-made use of the tracker sweep)
+
+Your script puts a tracker on a vehicle on the server; players sweep for it with one call; your script hears when it's removed. The server checks the vehicle, the distance and the tracker, and only the first player to find it removes it.
+
+```lua
+-- server: a boosted car gets a tracker
+exports.tobs_minigames:SetVehicleTracker(vehicle, {difficulty = "hard", job = jobId})   -- entity or network id
+
+AddEventHandler("tobs_minigames:trackerRemoved", function(playerId, vehicle, info)
+    -- stop the police GPS for info.job ...
+end)
+AddEventHandler("tobs_minigames:trackerMissed", function(playerId, vehicle, info) end)
+-- also: exports.tobs_minigames:GetVehicleTracker(vehicle), RemoveVehicleTracker(vehicle)
+```
+
+```lua
+-- client: an ox_target option on every vehicle
+exports.ox_target:addGlobalVehicle({{
+    name = "sweep", label = "Sweep for trackers", icon = "fa-solid fa-satellite-dish",
+    onSelect = function(data) exports.tobs_minigames:SweepVehicle(data.entity) end,
+}})
+```
+
+`SweepVehicle(vehicle)` returns `true` when the tracker was removed (or pass a callback: `function(removed, reason) end`, reason `"removed"`, `"missed"`, `"no_tracker"`, `"too_far"`, `"gone"`, `"no_vehicle"` or `"busy"`). The player looks at their phone while scanning, and a GTA notification tells them the result. Settings: `MG.Sweep` in `config.lua`.
+
 ### Logging on the server
 
 Every `Play` ends with a server event, for Discord logs or spotting someone who passes suspiciously often:
@@ -121,6 +146,10 @@ The "faster than possible" limits are in `MG.MinTime` in `config.lua`.
 2. Add `ensure tobs_minigames` to `server.cfg`, before the scripts that use it.
 3. Try each one in game with `/minigame keypad hard` (turn off with `MG.TestCommand = false`).
 
+## The window
+
+Every web minigame starts with a short "how to play" card (`MG.Intro` seconds, or SPACE / a click); keys are drawn as keycaps, lives as dots, the timer shows its seconds and warns when time runs low, and the end shows how it went ("Success · 12.4 s"). The window is the same share of the screen on any resolution (`MG.Scale`), and `MG.TextSize` and `MG.ReducedMotion` help players who need bigger text or less movement.
+
 ## Looks
 
 The web minigames come in three styles, picked with `MG.Style` in `config.lua`:
@@ -142,7 +171,7 @@ Everything is in `config.lua`: the language (`MG.Locale`), the default difficult
 The rules of every minigame are tested outside the game on every push:
 
 ```bash
-lua5.4 tests/main_test.lua && lua5.4 tests/server_test.lua && lua5.4 tests/drill_test.lua && lua5.4 tests/hack_test.lua && lua5.4 tests/safe_test.lua
+lua5.4 tests/main_test.lua && lua5.4 tests/server_test.lua && lua5.4 tests/sweep_test.lua && lua5.4 tests/drill_test.lua && lua5.4 tests/hack_test.lua && lua5.4 tests/safe_test.lua
 node --test tests/web/logic.test.js
 ```
 

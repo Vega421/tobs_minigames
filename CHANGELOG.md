@@ -17,6 +17,9 @@ All notable changes to tobs_minigames. Each version is also a [GitHub release](h
 - GTA's hacking sounds in the web minigames (`MG.Sounds`), and colour names plus a pattern on every wire for colour-blind players (`MG.Wires.labels`)
 - English, Danish, German, Swedish, Norwegian and Dutch
 - `dev/preview.html` to try the web minigames in a browser, without FiveM
+- **Trackers on vehicles:** `SetVehicleTracker` / `GetVehicleTracker` / `RemoveVehicleTracker` on the server, `SweepVehicle(vehicle)` on the client, and the `trackerRemoved` / `trackerMissed` server events: a ready-made way to use the tracker sweep in a script
+- The window: a "how to play" card before each game (`MG.Intro`), keycaps in the hints, lives as dots, seconds on the timer with a low-time warning, a shake on mistakes and a flash on right steps, a result screen with the time, and the same size on every resolution (`MG.Scale`); `MG.TextSize` and `MG.ReducedMotion` for accessibility
+- Key filing redrawn as a real key with filings, a radar sweep and a detailed car in the tracker sweep, sparks in the laser grid
 - Three looks for the web minigames (`MG.Style`): default, terminal (green hacker terminal) and glass (frosted glass), plus `MG.Theme` for your own colours on top
 - The server event `tobs_minigames:played` (player, game, result, time, reason) for logs, and `MG.MinTime` to change the "faster than possible" limits
 - `/minigame <name> [difficulty]` to try them in game

@@ -16,6 +16,9 @@
     --car-body: #2b313d;
     --car-edge: #4a5160;
     --car-glass: #1e2330;
+    --text-scale: 1;
+    --key-metal: #cbb482; /* brass */
+    --key-edge: #8c7a55;
 }
 
 * { box-sizing: border-box; }
@@ -43,7 +46,8 @@ html, body {
 
 .panel {
     position: relative;
-    width: min(680px, calc(100vw - 32px));
+    width: 680px;
+    transform-origin: center;
     background: var(--bg);
     border: 1px solid var(--line);
     border-top: 3px solid var(--brand);
@@ -53,33 +57,82 @@ html, body {
 }
 
 header { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
-h1 { margin: 0; font-size: 20px; font-weight: 600; letter-spacing: 0.02em; }
-#mg-status { color: var(--muted); font-size: 14px; font-variant-numeric: tabular-nums; }
+h1 { margin: 0; font-size: calc(20px * var(--text-scale)); font-weight: 600; letter-spacing: 0.02em; }
+.header-right { display: flex; align-items: center; gap: 14px; }
+#mg-status { display: flex; align-items: center; gap: 5px; color: var(--muted); font-size: calc(14px * var(--text-scale)); }
+.counter-label { margin-right: 3px; }
+.dot { width: 9px; height: 9px; border-radius: 50%; background: var(--brand); box-shadow: 0 0 6px var(--brand); }
+.dot.lost { background: transparent; box-shadow: none; border: 1.5px solid var(--line); }
+#mg-time { min-width: 38px; text-align: right; font-size: calc(14px * var(--text-scale)); font-weight: 700; font-variant-numeric: tabular-nums; color: var(--muted); }
+.low-time #mg-time { color: var(--bad); animation: low 1s infinite; }
+.low-time #mg-timer { background: var(--bad) !important; }
+@keyframes low { 50% { opacity: 0.45; } }
 
 .timer { height: 4px; background: var(--line); border-radius: 2px; margin: 12px 0 18px; overflow: hidden; }
 #mg-timer { height: 100%; width: 100%; background: var(--brand); transform-origin: left; }
 
-main { min-height: 260px; display: flex; align-items: center; justify-content: center; }
+main { display: flex; align-items: center; justify-content: center; }
 
-footer { display: flex; justify-content: space-between; gap: 12px; margin-top: 16px; font-size: 13px; color: var(--muted); }
+footer { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 16px; font-size: calc(13px * var(--text-scale)); color: var(--muted); }
+kbd {
+    display: inline-block; min-width: 1.7em; padding: 1px 6px; margin: 0 2px; text-align: center;
+    font: 700 0.85em/1.5 var(--font); color: var(--text); background: rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--line); border-bottom-width: 3px; border-radius: 5px;
+}
 #mg-giveup { white-space: nowrap; }
 
 #mg-result {
     position: absolute;
     inset: 0;
     display: flex;
+    flex-direction: column;
+    gap: 6px;
     align-items: center;
     justify-content: center;
+    animation: fade-in 0.2s;
     border-radius: var(--radius);
-    font-size: 30px;
+    font-size: calc(30px * var(--text-scale));
     font-weight: 700;
     letter-spacing: 0.04em;
     background: rgba(14, 16, 21, 0.88);
 }
 #mg-result.good { color: var(--good); }
 #mg-result.bad { color: var(--bad); }
+#mg-result-sub { font-size: calc(15px * var(--text-scale)); font-weight: 600; color: var(--muted); letter-spacing: 0; }
 
-.flash { color: var(--bad); font-weight: 600; min-height: 20px; text-align: center; }
+/* Intro card: how to play, then SPACE / a click / the countdown starts the game */
+#mg-intro {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 14px; padding: 26px 24px 14px; text-align: center; cursor: pointer;
+}
+.panel.intro > header, .panel.intro > .timer, .panel.intro > main, .panel.intro > footer { display: none; }
+#mg-intro h2 { margin: 0; font-size: calc(26px * var(--text-scale)); color: var(--brand); }
+#mg-intro-howto { margin: 0; max-width: 460px; font-size: calc(16px * var(--text-scale)); line-height: 1.6; }
+#mg-intro-start { font-size: calc(14px * var(--text-scale)); font-weight: 700; animation: low 1.6s infinite; }
+#mg-intro-count { font-size: calc(12px * var(--text-scale)); color: var(--muted); }
+
+/* Opening, closing and feedback */
+#mg:not(.hidden) .panel { animation: open 0.22s ease-out; }
+#mg.leaving { animation: fade-out 0.18s forwards; }
+@keyframes open { from { opacity: 0; translate: 0 12px; } }
+@keyframes fade-in { from { opacity: 0; } }
+@keyframes fade-out { to { opacity: 0; } }
+#mg .panel.fx-shake { animation: shake 0.35s; }
+#mg .panel.fx-pulse { animation: pulse 0.35s; }
+@keyframes shake { 20% { translate: -7px 0; } 40% { translate: 6px 0; } 60% { translate: -4px 0; } 80% { translate: 2px 0; } }
+@keyframes pulse { 40% { box-shadow: 0 0 0 2px var(--good), 0 0 30px var(--good); } }
+.reduced-motion *, .reduced-motion *::before, .reduced-motion *::after { animation: none !important; transition: none !important; }
+.reduced-motion .style-terminal .panel::after, .reduced-motion.style-terminal .panel::after { display: none; }
+
+/* Each game's own width, so there's no empty space */
+.panel.game-keypad { width: 440px; }
+.panel.game-thermite { width: 520px; }
+.panel.game-lockpick { width: 560px; }
+.panel.game-keyfiling { width: 600px; }
+.panel.game-wires, .panel.game-hotwire { width: 660px; }
+.panel.game-fingerprint, .panel.game-lasers, .panel.game-tracker { width: 700px; }
+
+.flash { color: var(--bad); font-weight: 600; min-height: 20px; text-align: center; font-size: calc(15px * var(--text-scale)); }
 
 button {
     font: inherit;
@@ -93,7 +146,7 @@ button:hover { border-color: var(--brand); }
 
 /* Keypad */
 .keypad { display: flex; flex-direction: column; align-items: center; gap: 14px; }
-.code { font-size: 44px; font-weight: 700; letter-spacing: 0.3em; font-variant-numeric: tabular-nums; min-height: 56px; }
+.code { font-size: calc(44px * var(--text-scale)); font-weight: 700; letter-spacing: 0.3em; font-variant-numeric: tabular-nums; min-height: 56px; }
 .code.hidden-code { color: var(--muted); }
 .keys { display: grid; grid-template-columns: repeat(3, 72px); gap: 8px; }
 .keys button { height: 52px; font-size: 20px; }
@@ -130,7 +183,7 @@ button:hover { border-color: var(--brand); }
 .wire.cut > .gap { position: absolute; top: -3px; bottom: -3px; left: 46%; width: 8%; background: var(--panel); }
 .wire.cut:hover { outline: none; }
 .wire.wrong { outline: 2px solid var(--bad); outline-offset: 3px; }
-.clues { margin: 0; padding-left: 22px; line-height: 1.8; }
+.clues { margin: 0; padding-left: 22px; line-height: 1.8; font-size: calc(16px * var(--text-scale)); }
 .clues li.current { color: var(--brand); font-weight: 600; }
 .clues li.done { color: var(--muted); text-decoration: line-through; }
 
@@ -180,17 +233,21 @@ canvas.car { cursor: crosshair; }
 .meter-fill { height: 100%; width: 0; background: var(--brand); transition: width 0.08s; }
 .meter-label { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; }
 
-/* Key filing */
-.key-wrap { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 10px; }
-.key { display: flex; align-items: flex-end; }
-.key-bow { width: 90px; height: 110px; border-radius: 50%; background: #b9a47a; border: 3px solid #8c7a55; margin-right: -6px; box-shadow: inset 0 0 0 22px #1b1f28, inset 0 0 0 25px #8c7a55; }
-.key-blade { display: flex; align-items: flex-end; height: 170px; padding: 0 10px 0 4px; background: linear-gradient(transparent 70%, #b9a47a 70%); border-radius: 0 10px 10px 0; }
-.cut { position: relative; width: 58px; height: 100%; cursor: pointer; border-left: 1px solid rgba(0, 0, 0, 0.25); }
-.cut .metal { position: absolute; left: 0; right: 0; bottom: 0; background: linear-gradient(90deg, #cdb98c, #b09a6c); }
-.cut .band { position: absolute; left: 0; right: 0; background: var(--good); opacity: 0.22; }
-.cut .line { position: absolute; left: -2px; right: -2px; height: 2px; background: var(--good); }
-.cut.selected { outline: 2px solid var(--brand); outline-offset: 2px; }
-.cut.ok .metal { background: linear-gradient(90deg, #9bd8b8, #6fbf97); }
+/* Key filing (SVG key) */
+.key-wrap { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.key-svg { width: 100%; height: auto; overflow: visible; }
+.key-metal { fill: var(--key-metal); stroke: var(--key-edge); stroke-width: 2.5; stroke-linejoin: round; }
+.key-hole { fill: var(--bg); stroke: var(--key-edge); stroke-width: 2.5; }
+.key-groove { stroke: var(--key-edge); stroke-width: 3; opacity: 0.55; stroke-linecap: round; }
+.cut-select { fill: transparent; stroke: transparent; stroke-width: 2; }
+.cut-select.on { stroke: var(--brand); fill: rgba(255, 255, 255, 0.04); }
+.cut-band { fill: var(--good); opacity: 0.2; }
+.cut-line { stroke: var(--good); stroke-width: 2; stroke-dasharray: 4 3; }
+.cut-ok { fill: var(--good); opacity: 0; transition: opacity 0.15s; }
+.cut-ok.on { opacity: 1; }
+.cut-hit { fill: transparent; cursor: pointer; }
+.filing { fill: var(--key-edge); animation: fall 0.65s ease-in forwards; }
+@keyframes fall { to { transform: translate(var(--dx), 38px); opacity: 0; } }
 
 /* ---------------------------------------------------------------------------------------------
    STYLES (MG.Style). Each one sets its own colours; MG.Theme colours still win over these.
@@ -215,6 +272,8 @@ canvas.car { cursor: crosshair; }
     --car-body: #062d12;
     --car-edge: #33ff66;
     --car-glass: #031006;
+    --key-metal: rgba(51, 255, 102, 0.08);
+    --key-edge: #33ff66;
 }
 .style-terminal .panel { border: 1px solid var(--brand); box-shadow: 0 0 28px rgba(51, 255, 102, 0.22), inset 0 0 40px rgba(51, 255, 102, 0.05); }
 .style-terminal .panel::after {
@@ -254,6 +313,8 @@ canvas.car { cursor: crosshair; }
     --car-body: #353b4a;
     --car-edge: rgba(255, 255, 255, 0.4);
     --car-glass: #1c202c;
+    --key-metal: #d5dbe7; /* silver */
+    --key-edge: #8f99ad;
 }
 .style-glass #mg { background: rgba(0, 0, 0, 0.15); }
 .style-glass .panel {

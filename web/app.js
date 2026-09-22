@@ -30,22 +30,68 @@
 
   function status(text) { $('mg-status').textContent = text || ''; }
 
+  // Text with keys: "[SPACE]" and "[W]" are drawn as keycaps
+  function setText(node, text) {
+    node.textContent = '';
+    String(text || '').split(/(\[[^\]]{1,12}\])/).forEach((part) => {
+      if (/^\[.+\]$/.test(part)) node.append(el('kbd', '', part.slice(1, -1)));
+      else if (part) node.append(document.createTextNode(part));
+    });
+  }
+
+  // Lives, mistakes or attempts as dots: filled for what's left. The first call sets the total.
+  function counter(label, left) {
+    if (game.counterMax == null) game.counterMax = left;
+    const box = $('mg-status');
+    box.textContent = '';
+    box.title = `${label}: ${Math.max(0, left)}`;
+    box.append(el('span', 'counter-label', label));
+    if (game.counterMax <= 0) { box.append(el('span', 'dot lost')); return; }
+    for (let i = 0; i < game.counterMax; i++) box.append(el('span', i < left ? 'dot' : 'dot lost'));
+  }
+
+  // A short effect on the panel: "shake" for a mistake, "pulse" for a right step
+  function effect(name) {
+    const panel = document.querySelector('.panel');
+    panel.classList.remove('fx-shake', 'fx-pulse');
+    void panel.offsetWidth; // restart the animation
+    panel.classList.add(`fx-${name}`);
+  }
+
   // A GTA sound through the game: "click", "move", "good", "bad", "success" or "fail"
-  function sound(name) { post('sound', { name }); }
+  function sound(name) {
+    post('sound', { name });
+    if (name === 'bad') effect('shake');
+    else if (name === 'good') effect('pulse');
+  }
 
   // A countdown bar; the game fails when it runs out (fails = false: it only shows the time)
   function startTimer(seconds, fails = true) {
     game.timerEnd = performance.now() + seconds * 1000;
     game.timerLength = seconds * 1000;
     game.timerFails = fails;
+    game.lastTick = null;
   }
-  function stopTimer() { game.timerEnd = null; $('mg-timer').style.transform = 'scaleX(1)'; }
+  function stopTimer() {
+    game.timerEnd = null;
+    $('mg-timer').style.transform = 'scaleX(1)';
+    $('mg-time').textContent = '';
+    document.querySelector('.panel').classList.remove('low-time');
+  }
 
   function loop(now) {
     if (!game || game.ended) return;
     if (game.timerEnd) {
       const left = game.timerEnd - now;
       $('mg-timer').style.transform = `scaleX(${Math.max(0, left / game.timerLength)})`;
+      if (game.timerFails) {
+        // the seconds, and a warning (red, pulsing, a tick a second) for the last few
+        const secs = Math.max(0, Math.min(Math.round(game.timerLength / 1000), Math.ceil(left / 1000)));
+        $('mg-time').textContent = `${secs} s`;
+        const low = left <= Math.min(5000, game.timerLength * 0.3);
+        document.querySelector('.panel').classList.toggle('low-time', low);
+        if (low && secs > 0 && secs !== game.lastTick) { game.lastTick = secs; post('sound', { name: 'move' }); }
+      }
       if (left <= 0 && game.timerFails) { finish(false, game.t.time_up); return; }
       if (left <= 0) game.timerEnd = null;
     }
@@ -53,14 +99,20 @@
     requestAnimationFrame(loop);
   }
 
-  function finish(success, message) {
+  // The end: "Success · 12.4 s" or "Failed · the reason"
+  function finish(success, reason) {
     if (!game || game.ended) return;
     game.ended = true;
-    const result = $('mg-result');
-    result.textContent = message || (success ? game.t.success : game.t.failed);
-    result.className = success ? 'good' : 'bad';
+    const took = game.startedAt ? ((performance.now() - game.startedAt) / 1000).toFixed(1) : null;
+    $('mg-result-title').textContent = success ? game.t.success : game.t.failed;
+    const sub = [];
+    if (reason) sub.push(reason);
+    if (took && success) sub.push(fmt(game.t.took, took));
+    $('mg-result-sub').textContent = sub.join(' · ');
+    $('mg-result').className = success ? 'good' : 'bad';
+    document.querySelector('.panel').classList.remove('low-time');
     sound(success ? 'success' : 'fail');
-    setTimeout(() => post('done', { success }), 900);
+    setTimeout(() => post('done', { success }), 1200);
   }
 
   // MG.Style from config.lua: a class on the page that style.css turns into a look
@@ -79,27 +131,88 @@
     }
   }
 
+  // MG.Scale: the same share of the screen on any resolution (made for 1080p), never bigger than
+  // fits. In the preview (ui.fit) it just fills the frame.
+  let ui = {};
+  function applyScale() {
+    const panel = document.querySelector('.panel');
+    panel.style.transform = 'none';
+    const fit = Math.min((innerWidth - 32) / panel.offsetWidth, (innerHeight - 32) / panel.offsetHeight);
+    const wanted = ui.fit ? 1.15 : (Number(ui.scale) || 1) * (innerHeight / 1080);
+    panel.style.transform = `scale(${Math.max(0.3, Math.min(wanted, fit))})`;
+  }
+  window.addEventListener('resize', () => { if (game) applyScale(); });
+  // How much the panel is scaled on screen (for positions measured with getBoundingClientRect)
+  const panelScale = (node) => node.getBoundingClientRect().width / node.offsetWidth || 1;
+
+  function applyUi(u) {
+    ui = u || {};
+    const root = document.documentElement;
+    root.style.setProperty('--text-scale', String(Number(ui.textSize) || 1));
+    root.classList.toggle('reduced-motion', ui.reducedMotion === true);
+  }
+
+  function startGame() {
+    if (!game || game.started || game.ended) return;
+    game.started = true;
+    clearInterval(game.introTimer);
+    $('mg-intro').classList.add('hidden');
+    document.querySelector('.panel').classList.remove('intro');
+    game.startedAt = performance.now();
+    Games[game.name](game);
+    applyScale();
+  }
+
   function open(data) {
     const t = data.text;
     applyStyle(data.style);
     applyTheme(data.theme);
+    applyUi(data.ui);
     game = { name: data.game, o: data.opts || {}, t, ended: false, rand: M.random(data.opts && data.opts.seed) };
+    const panel = document.querySelector('.panel');
+    panel.className = `panel game-${data.game}`;
     $('mg-title').textContent = t['title_' + data.game] || data.game;
-    $('mg-hint').textContent = '';
-    $('mg-giveup').textContent = t.give_up;
+    setText($('mg-hint'), '');
+    setText($('mg-giveup'), t.give_up);
     $('mg-result').className = 'hidden';
     $('mg-body').innerHTML = '';
     status('');
     stopTimer();
-    Games[data.game](game);
-    $('mg').classList.remove('hidden');
+    $('mg').classList.remove('hidden', 'leaving');
+    // The "how to play" card; the game (and its timer) starts on SPACE, a click, or by itself
+    const intro = Number(ui.intro) || 0;
+    if (intro > 0 && t['howto_' + data.game]) {
+      $('mg-intro-title').textContent = t['title_' + data.game] || data.game;
+      setText($('mg-intro-howto'), t['howto_' + data.game]);
+      setText($('mg-intro-start'), t.start);
+      let left = Math.ceil(intro);
+      $('mg-intro-count').textContent = fmt(t.starts_in, left);
+      $('mg-intro').classList.remove('hidden');
+      panel.classList.add('intro');
+      game.introTimer = setInterval(() => {
+        left -= 1;
+        if (left <= 0) return startGame();
+        $('mg-intro-count').textContent = fmt(t.starts_in, left);
+      }, 1000);
+      applyScale();
+    } else {
+      $('mg-intro').classList.add('hidden');
+      startGame();
+    }
     requestAnimationFrame(loop);
   }
+  $('mg-intro').addEventListener('click', startGame);
 
   function close() {
-    $('mg').classList.add('hidden');
-    $('mg-body').innerHTML = '';
+    if (game) clearInterval(game.introTimer);
     game = null;
+    $('mg').classList.add('leaving');
+    setTimeout(() => {
+      if (game) return; // a new game opened meanwhile
+      $('mg').classList.add('hidden');
+      $('mg').classList.remove('leaving');
+      $('mg-body').innerHTML = '';
+    }, 180);
   }
 
   const Games = {};
@@ -117,7 +230,7 @@
     const keys = el('div', 'keys');
     box.append(shown, flash, keys);
     $('mg-body').append(box);
-    $('mg-hint').textContent = g.t.keypad_memorize;
+    setText($('mg-hint'), g.t.keypad_memorize);
 
     const showInput = () => { shown.textContent = input.padEnd(code.length, '•'); };
     const press = (k) => {
@@ -128,7 +241,7 @@
       else if (k === 'enter') {
         if (M.keypadCheck(code, input)) return finish(true);
         attempts -= 1;
-        status(`${g.t.attempts}: ${attempts}`);
+        counter(g.t.attempts, attempts);
         if (attempts <= 0) return finish(false, g.t.keypad_wrong);
         sound('bad');
         flash.textContent = g.t.keypad_wrong;
@@ -153,8 +266,8 @@
       entering = true;
       shown.classList.add('hidden-code');
       keys.style.visibility = 'visible';
-      $('mg-hint').textContent = g.t.keypad_enter;
-      status(`${g.t.attempts}: ${attempts}`);
+      setText($('mg-hint'), g.t.keypad_enter);
+      counter(g.t.attempts, attempts);
       showInput();
       startTimer(o.time || 15);
     }, o.show || 2500);
@@ -179,7 +292,7 @@
         if (r === 'miss') {
           c.classList.add('miss');
           mistakes -= 1;
-          status(`${g.t.mistakes}: ${Math.max(0, mistakes)}`);
+          counter(g.t.mistakes, Math.max(0, mistakes));
           if (mistakes < 0) return finish(false);
           return sound('bad');
         }
@@ -192,14 +305,14 @@
       return c;
     });
     $('mg-body').append(grid);
-    $('mg-hint').textContent = g.t.thermite_memorize;
+    setText($('mg-hint'), g.t.thermite_memorize);
     startTimer((o.show || 2500) / 1000, false);
     setTimeout(() => {
       if (g.ended || game !== g) return;
       clicking = true;
       cells.forEach((c) => c.classList.remove('lit'));
-      $('mg-hint').textContent = g.t.thermite_click;
-      status(`${g.t.mistakes}: ${mistakes}`);
+      setText($('mg-hint'), g.t.thermite_click);
+      counter(g.t.mistakes, mistakes);
       startTimer(o.time || 12);
     }, o.show || 2500);
   };
@@ -243,7 +356,7 @@
     });
     wrap.append(wireBox, clues);
     $('mg-body').append(wrap);
-    $('mg-hint').textContent = g.t.wires_hint;
+    setText($('mg-hint'), g.t.wires_hint);
     startTimer(o.time || 20);
   };
 
@@ -266,8 +379,8 @@
     track.append(zoneEl, pick);
     box.append(pinRow, track, flash);
     $('mg-body').append(box);
-    $('mg-hint').textContent = g.t.lockpick_hint;
-    status(`${g.t.lives}: ${lives}`);
+    setText($('mg-hint'), g.t.lockpick_hint);
+    counter(g.t.lives, lives);
 
     const placeZone = () => {
       zoneEl.style.left = `${(pins[current] - zone / 2) * 100}%`;
@@ -287,7 +400,7 @@
         sound('good');
       } else {
         lives -= 1;
-        status(`${g.t.lives}: ${lives}`);
+        counter(g.t.lives, lives);
         if (lives <= 0) return finish(false, g.t.pick_broke);
         sound('bad');
         flash.textContent = g.t.pick_broke;
@@ -356,7 +469,7 @@
       if (g.ended || selected.length !== 4) return;
       if (M.fingerprintCheck(print.pieces, selected)) return finish(true);
       lives -= 1;
-      status(`${g.t.lives}: ${lives}`);
+      counter(g.t.lives, lives);
       if (lives <= 0) return finish(false, g.t.no_match);
       sound('bad');
       flash.textContent = g.t.no_match;
@@ -365,8 +478,8 @@
     };
     wrap.append(side, grid);
     $('mg-body').append(wrap);
-    $('mg-hint').textContent = g.t.fingerprint_hint;
-    status(`${g.t.lives}: ${lives}`);
+    setText($('mg-hint'), g.t.fingerprint_hint);
+    counter(g.t.lives, lives);
     startTimer(o.time || 25);
   };
 
@@ -401,9 +514,10 @@
     });
     const link = (w, b, color) => {
       const r = box.getBoundingClientRect(), a = w.getBoundingClientRect(), c = b.getBoundingClientRect();
+      const k = panelScale(box);
       const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-      line.setAttribute('x1', a.right - r.left); line.setAttribute('y1', a.top + a.height / 2 - r.top);
-      line.setAttribute('x2', c.left - r.left); line.setAttribute('y2', c.top + c.height / 2 - r.top);
+      line.setAttribute('x1', (a.right - r.left) / k); line.setAttribute('y1', (a.top + a.height / 2 - r.top) / k);
+      line.setAttribute('x2', (c.left - r.left) / k); line.setAttribute('y2', (c.top + c.height / 2 - r.top) / k);
       line.setAttribute('stroke', WIRE_HEX[color]);
       svg.append(line);
     };
@@ -417,7 +531,7 @@
         if (r === 'used') return;
         if (r === 'wrong') {
           mistakes -= 1;
-          status(`${g.t.mistakes}: ${Math.max(0, mistakes)}`);
+          counter(g.t.mistakes, Math.max(0, mistakes));
           b.classList.remove('spark'); void b.offsetWidth; b.classList.add('spark');
           if (mistakes < 0) return finish(false, g.t.sparks);
           flash.textContent = g.t.sparks;
@@ -439,8 +553,8 @@
     box.append(left, svg, right);
     $('mg-body').append(el('div', 'hw-wrap'));
     $('mg-body').lastChild.append(box, flash);
-    $('mg-hint').textContent = g.t.hotwire_hint;
-    status(`${g.t.mistakes}: ${mistakes}`);
+    setText($('mg-hint'), g.t.hotwire_hint);
+    counter(g.t.mistakes, mistakes);
     startTimer(o.time || 16);
   };
 
@@ -458,6 +572,7 @@
     $('mg-body').append(wrap);
     const ctx = canvas.getContext('2d');
     let p = { ...M.LASER_START }, lives = o.lives || 1, safeUntil = 0;
+    const sparks = []; // {x, y, vx, vy, life} in pixels, from touching a laser
     const keys = {};
     const t0 = performance.now();
     let last = t0;
@@ -497,6 +612,13 @@
         ctx.shadowBlur = 0;
         ctx.globalAlpha = 1;
       }
+      for (const s of sparks) {
+        ctx.strokeStyle = s.life > 0.25 ? '#fff6c2' : laser;
+        ctx.globalAlpha = Math.min(1, s.life * 2.5);
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(s.x, s.y); ctx.lineTo(s.x - s.vx * 0.03, s.y - s.vy * 0.03); ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
       const blinking = performance.now() < safeUntil && Math.floor(performance.now() / 120) % 2 === 0;
       if (!blinking) {
         ctx.fillStyle = cssColor('--text') || '#fff';
@@ -511,9 +633,18 @@
       last = now;
       const t = (now - t0) / 1000;
       p = M.moveDot(p, keys, dt, o.move || 0.35);
+      for (let i = sparks.length - 1; i >= 0; i--) {
+        const s = sparks[i];
+        s.x += s.vx * dt; s.y += s.vy * dt; s.vy += 500 * dt; s.life -= dt;
+        if (s.life <= 0) sparks.splice(i, 1);
+      }
       if (now > safeUntil && M.laserHit(p, beams, t)) {
+        for (let k = 0; k < 16; k++) {
+          const a = Math.random() * Math.PI * 2, v = 120 + Math.random() * 260;
+          sparks.push({ x: p.x * S, y: p.y * S, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 60, life: 0.35 + Math.random() * 0.3 });
+        }
         lives -= 1;
-        status(`${g.t.lives}: ${Math.max(0, lives)}`);
+        counter(g.t.lives, Math.max(0, lives));
         if (lives <= 0) { draw(t); return finish(false, g.t.laser_hit); }
         sound('bad');
         flash.textContent = g.t.laser_hit;
@@ -523,52 +654,87 @@
       if (M.laserExit(p)) { draw(t); return finish(true); }
       draw(t);
     };
-    $('mg-hint').textContent = g.t.lasers_hint;
-    status(`${g.t.lives}: ${lives}`);
+    setText($('mg-hint'), g.t.lasers_hint);
+    counter(g.t.lives, lives);
     draw(0);
     startTimer(o.time || 35);
   };
 
-  // KEY FILING: file each cut down to its line, not deeper
+  // KEY FILING: file each cut down to its line, not deeper. The key is drawn as SVG: a bow, and a
+  // blade whose notches follow each cut's depth.
+  const SVGNS = 'http://www.w3.org/2000/svg';
+  const svgEl = (tag, attrs) => {
+    const e = document.createElementNS(SVGNS, tag);
+    for (const [k, v] of Object.entries(attrs || {})) e.setAttribute(k, v);
+    return e;
+  };
   Games.keyfiling = function (g) {
     const o = g.o;
     const tol = o.tolerance || 0.045;
     const targets = M.makeKeyCuts(g.rand, o.cuts || 5);
+    const n = targets.length;
     let depths = targets.map(() => 0);
-    let sel = 0, filing = false, lives = o.lives || 1, lastRasp = 0;
+    let sel = 0, filing = false, lives = o.lives || 1, lastRasp = 0, lastFiling = 0;
     let last = performance.now();
-    const box = el('div', 'key');
-    box.append(el('div', 'key-bow'));
-    const blade = el('div', 'key-blade');
-    const cuts = targets.map((target, i) => {
-      const c = el('div', 'cut');
-      const band = el('div', 'band');
-      band.style.bottom = `${(1 - target - tol) * 100}%`;
-      band.style.height = `${tol * 2 * 100}%`;
-      const metal = el('div', 'metal');
-      const line = el('div', 'line');
-      line.style.bottom = `${(1 - target) * 100}%`;
-      c.append(metal, band, line);
-      c.onmousedown = (e) => { if (g.ended) return; sel = i; filing = true; e.preventDefault(); };
-      blade.append(c);
-      return { c, metal };
+    // Geometry (SVG units): blade from x0, each cut cw wide, top y0, bottom y1
+    const cw = Math.min(64, 330 / n), x0 = 150, y0 = 56, y1 = 150, reach = (y1 - y0) * 0.85;
+    const xEnd = x0 + n * cw + 10, W = xEnd + 40;
+    const depthY = (d) => y0 + d * reach;
+    const svg = svgEl('svg', { viewBox: `0 0 ${W} 200`, class: 'key-svg' });
+    // the bow: a ring with a hole, and the shoulder
+    svg.append(svgEl('circle', { cx: 70, cy: 103, r: 58, class: 'key-metal' }));
+    svg.append(svgEl('circle', { cx: 60, cy: 103, r: 18, class: 'key-hole' }));
+    svg.append(svgEl('rect', { x: 118, y: 72, width: 40, height: 62, rx: 6, class: 'key-metal' }));
+    const blade = svgEl('path', { class: 'key-metal' });
+    svg.append(blade);
+    svg.append(svgEl('line', { x1: x0, y1: 128, x2: xEnd, y2: 128, class: 'key-groove' }));
+    const cols = targets.map((target, i) => {
+      const x = x0 + i * cw;
+      const hi = svgEl('rect', { x: x + 2, y: 30, width: cw - 4, height: 126, rx: 6, class: 'cut-select' });
+      const band = svgEl('rect', { x: x + cw * 0.12, y: depthY(target - tol), width: cw * 0.76, height: 2 * tol * reach, class: 'cut-band' });
+      const line = svgEl('line', { x1: x + cw * 0.08, x2: x + cw * 0.92, y1: depthY(target), y2: depthY(target), class: 'cut-line' });
+      const ok = svgEl('circle', { cx: x + cw / 2, cy: 38, r: 5, class: 'cut-ok' });
+      const hit = svgEl('rect', { x, y: 20, width: cw, height: 150, class: 'cut-hit' });
+      hit.addEventListener('mousedown', (e) => { if (g.ended) return; sel = i; filing = true; e.preventDefault(); });
+      svg.insertBefore(hi, blade);
+      svg.append(band, line, ok, hit);
+      return { hi, ok };
     });
-    box.append(blade);
+    const filings = svgEl('g');
+    svg.append(filings);
+    const box = el('div', 'key-wrap');
     const flash = el('div', 'flash');
-    $('mg-body').append(el('div', 'key-wrap'));
-    $('mg-body').lastChild.append(box, flash);
-    const show = () => cuts.forEach((k, i) => {
-      k.metal.style.height = `${(1 - depths[i]) * 100}%`;
-      k.c.classList.toggle('selected', i === sel);
-      k.c.classList.toggle('ok', M.cutOk(depths[i], targets[i], tol));
-    });
+    box.append(svg, flash);
+    $('mg-body').append(box);
+
+    const draw = () => {
+      // the blade's top edge dips into a notch at each cut, then a pointed tip
+      let d = `M ${x0} ${y0}`;
+      depths.forEach((dep, i) => {
+        const x = x0 + i * cw, y = depthY(dep);
+        d += ` L ${x + cw * 0.14} ${y0} L ${x + cw * 0.26} ${y} L ${x + cw * 0.74} ${y} L ${x + cw * 0.86} ${y0}`;
+      });
+      d += ` L ${xEnd} ${y0} L ${xEnd + 28} ${(y0 + y1) / 2 + 12} L ${xEnd} ${y1} L ${x0} ${y1} Z`;
+      blade.setAttribute('d', d);
+      cols.forEach((c, i) => {
+        c.hi.classList.toggle('on', i === sel);
+        c.ok.classList.toggle('on', M.cutOk(depths[i], targets[i], tol));
+      });
+    };
+    const spark = () => {
+      const x = x0 + sel * cw + cw * (0.3 + Math.random() * 0.4), y = depthY(depths[sel]);
+      const bit = svgEl('circle', { cx: x, cy: y, r: 1.4 + Math.random() * 1.2, class: 'filing' });
+      bit.style.setProperty('--dx', `${(Math.random() - 0.5) * 24}px`);
+      filings.append(bit);
+      setTimeout(() => bit.remove(), 650);
+    };
     const stopFiling = () => { filing = false; };
     document.addEventListener('mouseup', stopFiling);
     g.onKey = (e) => {
       if (e.code === 'Space') { filing = true; e.preventDefault(); }
       else if (e.code === 'ArrowLeft' || e.code === 'KeyA') { sel = Math.max(0, sel - 1); sound('click'); }
-      else if (e.code === 'ArrowRight' || e.code === 'KeyD') { sel = Math.min(targets.length - 1, sel + 1); sound('click'); }
-      show();
+      else if (e.code === 'ArrowRight' || e.code === 'KeyD') { sel = Math.min(n - 1, sel + 1); sound('click'); }
+      draw();
     };
     g.onKeyUp = (e) => { if (e.code === 'Space') filing = false; };
     g.frame = (now) => {
@@ -576,23 +742,24 @@
       last = now;
       if (filing) {
         depths[sel] = M.fileCut(depths[sel], dt, o.speed || 0.4);
-        if (now - lastRasp > 160) { sound('move'); lastRasp = now; }
+        if (now - lastRasp > 160) { post('sound', { name: 'move' }); lastRasp = now; }
+        if (now - lastFiling > 55) { spark(); lastFiling = now; }
         if (M.cutRuined(depths[sel], targets[sel], tol)) {
           filing = false;
           lives -= 1;
-          status(`${g.t.lives}: ${Math.max(0, lives)}`);
-          if (lives <= 0) { show(); return finish(false, g.t.key_ruined); }
+          counter(g.t.lives, Math.max(0, lives));
+          if (lives <= 0) { draw(); document.removeEventListener('mouseup', stopFiling); return finish(false, g.t.key_ruined); }
           sound('bad');
           flash.textContent = g.t.key_ruined;
           depths = targets.map(() => 0);
         }
       }
-      show();
+      draw();
       if (M.keyDone(depths, targets, tol)) { document.removeEventListener('mouseup', stopFiling); finish(true); }
     };
-    $('mg-hint').textContent = g.t.keyfiling_hint;
-    status(`${g.t.lives}: ${lives}`);
-    show();
+    setText($('mg-hint'), g.t.keyfiling_hint);
+    counter(g.t.lives, lives);
+    draw();
     startTimer(o.time || 40);
   };
 
@@ -616,15 +783,32 @@
     const misses = [];
     let found = null;
     const round = (x, y, w, h, r) => { ctx.beginPath(); ctx.roundRect ? ctx.roundRect(x, y, w, h, r) : ctx.rect(x, y, w, h); };
+    // A car seen from above, front to the right: wheels, body, mirrors, windows, roof, hood and
+    // door lines, headlights and taillights
+    const drawCar = () => {
+      const X = (v) => v * S, Y = (v) => v * H;
+      const edge = cssColor('--car-edge');
+      ctx.fillStyle = cssColor('--car-wheel');
+      for (const [x, y] of [[0.19, 0.09], [0.7, 0.09], [0.19, 0.79], [0.7, 0.79]]) { round(X(x), Y(y), X(0.1), Y(0.12), 6); ctx.fill(); }
+      ctx.fillStyle = cssColor('--car-body'); ctx.strokeStyle = edge; ctx.lineWidth = 2;
+      for (const y of [0.1, 0.9]) { ctx.beginPath(); ctx.ellipse(X(0.61), Y(y), X(0.022), Y(0.035), 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); } // mirrors
+      round(X(0.08), Y(0.14), X(0.84), Y(0.72), 46); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = cssColor('--car-glass');
+      ctx.beginPath(); ctx.moveTo(X(0.555), Y(0.24)); ctx.lineTo(X(0.64), Y(0.2)); ctx.lineTo(X(0.64), Y(0.8)); ctx.lineTo(X(0.555), Y(0.76)); ctx.closePath(); ctx.fill(); // windscreen
+      ctx.beginPath(); ctx.moveTo(X(0.27), Y(0.22)); ctx.lineTo(X(0.33), Y(0.25)); ctx.lineTo(X(0.33), Y(0.75)); ctx.lineTo(X(0.27), Y(0.78)); ctx.closePath(); ctx.fill(); // rear window
+      ctx.strokeStyle = edge; ctx.globalAlpha = 0.45; ctx.lineWidth = 1.5;
+      round(X(0.34), Y(0.26), X(0.21), Y(0.48), 10); ctx.stroke(); // roof
+      ctx.beginPath(); ctx.moveTo(X(0.66), Y(0.3)); ctx.quadraticCurveTo(X(0.8), Y(0.35), X(0.9), Y(0.34)); ctx.moveTo(X(0.66), Y(0.7)); ctx.quadraticCurveTo(X(0.8), Y(0.65), X(0.9), Y(0.66)); ctx.stroke(); // hood
+      ctx.beginPath(); ctx.moveTo(X(0.45), Y(0.15)); ctx.lineTo(X(0.45), Y(0.23)); ctx.moveTo(X(0.45), Y(0.77)); ctx.lineTo(X(0.45), Y(0.85)); ctx.stroke(); // doors
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = '#ffe9a8';
+      for (const y of [0.2, 0.72]) { round(X(0.895), Y(y), X(0.018), Y(0.08), 3); ctx.fill(); } // headlights
+      ctx.fillStyle = '#ff4057';
+      for (const y of [0.2, 0.72]) { round(X(0.087), Y(y), X(0.014), Y(0.08), 3); ctx.fill(); } // taillights
+    };
     const draw = (now) => {
       ctx.fillStyle = cssColor('--floor'); ctx.fillRect(0, 0, W, H);
-      ctx.fillStyle = cssColor('--car-wheel');
-      for (const [x, y] of [[0.2, 0.1], [0.72, 0.1], [0.2, 0.78], [0.72, 0.78]]) { round(x * S, y * H, 0.09 * S, 0.12 * H, 6); ctx.fill(); }
-      ctx.fillStyle = cssColor('--car-body'); ctx.strokeStyle = cssColor('--car-edge'); ctx.lineWidth = 2;
-      round(0.1 * S, 0.14 * H, 0.8 * S, 0.72 * H, 40); ctx.fill(); ctx.stroke();
-      ctx.fillStyle = cssColor('--car-glass');
-      round(0.3 * S, 0.22 * H, 0.1 * S, 0.56 * H, 10); ctx.fill();
-      round(0.62 * S, 0.24 * H, 0.08 * S, 0.52 * H, 10); ctx.fill();
+      drawCar();
       for (const m of misses) {
         ctx.strokeStyle = cssColor('--bad'); ctx.lineWidth = 3;
         ctx.beginPath(); ctx.moveTo(m.x * S - 7, m.y * S - 7); ctx.lineTo(m.x * S + 7, m.y * S + 7);
@@ -637,9 +821,20 @@
       if (scan) {
         const s = M.signal(scan, puzzle);
         const pulse = Math.max(0, 1 - (now - lastBeep) / 300);
-        ctx.strokeStyle = cssColor('--brand'); ctx.lineWidth = 2;
-        ctx.globalAlpha = 0.5 + 0.5 * pulse;
-        ctx.beginPath(); ctx.arc(scan.x * S, scan.y * S, 18 + pulse * 10, 0, Math.PI * 2); ctx.stroke();
+        const cx = scan.x * S, cy = scan.y * S, R = 42;
+        const brand = cssColor('--brand');
+        // radar: a sweeping wedge that fades behind the line, turning faster on a strong signal
+        const angle = (now / 1000) * (2 + s * 5);
+        for (let k = 0; k < 14; k++) {
+          ctx.globalAlpha = 0.28 * (1 - k / 14);
+          ctx.fillStyle = brand;
+          ctx.beginPath(); ctx.moveTo(cx, cy); ctx.arc(cx, cy, R, angle - (k + 1) * 0.07, angle - k * 0.07); ctx.closePath(); ctx.fill();
+        }
+        ctx.globalAlpha = 0.35; ctx.strokeStyle = brand; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.stroke();
+        ctx.beginPath(); ctx.arc(cx, cy, R / 2, 0, Math.PI * 2); ctx.stroke();
+        ctx.globalAlpha = 0.5 + 0.5 * pulse; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(cx, cy, 8 + pulse * 10, 0, Math.PI * 2); ctx.stroke();
         ctx.globalAlpha = 1;
         fill.style.width = `${Math.round(s * 100)}%`;
         label.textContent = `${g.t.signal}: ${Math.round(s * 100)}%`;
@@ -655,7 +850,7 @@
       if (M.trackerFound(scan, puzzle, o.radius || 0.055)) { found = puzzle.tracker; draw(performance.now()); return finish(true); }
       misses.push({ ...scan });
       lives -= 1;
-      status(`${g.t.lives}: ${Math.max(0, lives)}`);
+      counter(g.t.lives, Math.max(0, lives));
       if (lives <= 0) { found = puzzle.tracker; draw(performance.now()); return finish(false, g.t.nothing_here); }
       sound('bad');
       flash.textContent = g.t.nothing_here;
@@ -667,8 +862,8 @@
       }
       draw(now);
     };
-    $('mg-hint').textContent = g.t.tracker_hint;
-    status(`${g.t.lives}: ${lives}`);
+    setText($('mg-hint'), g.t.tracker_hint);
+    counter(g.t.lives, lives);
     draw(performance.now());
     startTimer(o.time || 35);
   };
@@ -684,6 +879,10 @@
   document.addEventListener('keydown', (e) => {
     if (!game || game.ended) return;
     if (e.key === 'Escape') return finish(false);
+    if (!game.started) {
+      if (e.code === 'Space' || e.key === 'Enter') { e.preventDefault(); startGame(); }
+      return;
+    }
     if (game.onKey) game.onKey(e);
   });
 })();

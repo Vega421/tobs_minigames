@@ -60,9 +60,10 @@ local function RunWeb(name, o)
     local p = promise.new()
     Pending = p
     SetNuiFocus(true, true) -- before opening, so an answer can never leave the focus on
-    SendNUIMessage({action = "open", game = name, opts = o, text = MGTexts(), theme = MG.Theme, style = MG.Style})
+    SendNUIMessage({action = "open", game = name, opts = o, text = MGTexts(), theme = MG.Theme, style = MG.Style,
+        ui = {scale = MG.Scale, intro = MG.Intro, textSize = MG.TextSize, reducedMotion = MG.ReducedMotion}})
     local ped = PlayerPedId()
-    local limit = (o.time or 240) + (o.show or 0) / 1000 + 15
+    local limit = (o.time or 240) + (o.show or 0) / 1000 + (tonumber(MG.Intro) or 0) + 15
     local deadline = GetGameTimer() + limit * 1000
     Citizen.CreateThread(function()
         while Pending == p do

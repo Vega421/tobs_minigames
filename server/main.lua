@@ -56,6 +56,7 @@ local function Play(src, name, opts, cb)
     return Citizen.Await(p)
 end
 exports("Play", Play)
+MGPlay = Play -- for the rest of this resource (server/tracker.lua)
 
 RegisterNetEvent("tobs_minigames:result")
 AddEventHandler("tobs_minigames:result", function(id, result)

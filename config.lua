@@ -7,6 +7,12 @@ MG.Sounds = true -- GTA's hacking sounds in the web minigames (clicks, right, wr
 -- /minigame <name> [easy|medium|hard] lets anyone try a minigame (it gives nothing). false = off
 MG.TestCommand = "minigame"
 
+-- The web minigames' window
+MG.Scale = 1.0 -- size on screen: 1.0 = the same share of the screen on any resolution (made for 1080p)
+MG.Intro = 5 -- seconds a "how to play" card shows before the game starts by itself (SPACE or a click starts it sooner). 0 = no card
+MG.TextSize = 1.0 -- bigger or smaller text, e.g. 1.2
+MG.ReducedMotion = false -- true: no shaking, pulsing, blinking or scanlines
+
 -- Look of the web minigames: "default" (dark panel, orange), "terminal" (green hacker terminal with
 -- scanlines) or "glass" (frosted glass over the game)
 MG.Style = "default"
@@ -16,6 +22,12 @@ MG.Style = "default"
 -- counters; good: right answers; bad: mistakes and lasers; gold: the lockpick's sweet spot
 -- Example: MG.Theme = {accent = "#3e7bfa", gold = "#b58cff"}
 MG.Theme = {}
+
+-- Trackers on vehicles (server/tracker.lua): scripts put them on, players sweep for them with
+-- exports.tobs_minigames:SweepVehicle(vehicle). distance: meters from the vehicle; difficulty: when
+-- the script doesn't give one; scan: ms a player scans a vehicle that has no tracker before "none
+-- found"; notify: GTA notifications for the result
+MG.Sweep = {distance = 4.0, difficulty = "medium", scan = 3000, notify = true}
 
 -- Server: an answer to exports.tobs_minigames:Play that comes back faster than this (ms) counts as
 -- failed. Leave a game out to use the built-in guess: drill = its time - 1 s, safe = 1.5 s per number,

@@ -18,10 +18,12 @@ client_scripts {
     "client/hack.lua",
     "client/safe.lua",
     "client/main.lua",
+    "client/tracker.lua",
 }
 
 server_scripts {
     "server/main.lua",
+    "server/tracker.lua",
 }
 
 ui_page "web/index.html"

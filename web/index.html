@@ -10,7 +10,10 @@
         <div class="panel">
             <header>
                 <h1 id="mg-title"></h1>
-                <div id="mg-status"></div>
+                <div class="header-right">
+                    <div id="mg-status"></div>
+                    <div id="mg-time"></div>
+                </div>
             </header>
             <div class="timer"><div id="mg-timer"></div></div>
             <main id="mg-body"></main>
@@ -18,7 +21,16 @@
                 <span id="mg-hint"></span>
                 <span id="mg-giveup"></span>
             </footer>
-            <div id="mg-result" class="hidden"></div>
+            <div id="mg-intro" class="hidden">
+                <h2 id="mg-intro-title"></h2>
+                <p id="mg-intro-howto"></p>
+                <div id="mg-intro-start"></div>
+                <div id="mg-intro-count"></div>
+            </div>
+            <div id="mg-result" class="hidden">
+                <div id="mg-result-title"></div>
+                <div id="mg-result-sub"></div>
+            </div>
         </div>
     </div>
     <script src="logic.js"></script>
