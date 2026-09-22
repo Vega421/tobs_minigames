@@ -115,7 +115,7 @@ The rules of every minigame are tested outside the game on every push:
 
 ```bash
 lua5.4 tests/main_test.lua && lua5.4 tests/server_test.lua && lua5.4 tests/drill_test.lua && lua5.4 tests/hack_test.lua && lua5.4 tests/safe_test.lua
-node --test tests/web/
+node --test tests/web/logic.test.js
 ```
 
 ## Credits
