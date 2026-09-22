@@ -9,6 +9,7 @@ Everything your script can call. Default settings are in `config.lua`.
 | `Keypad()`, `Wires()`, `Lasers()`, … | client | Play a minigame ([all 12](#the-12-minigames)) |
 | `Start(name)` | client | Play a minigame by name |
 | `IsActive()` | client | Is a minigame open right now? |
+| `GaveUp()` | client | Did the last minigame end with ESC? |
 | `SweepVehicle(vehicle)` | client | Sweep a car for a GPS tracker |
 | `Play(playerId, name)` | server | Play a minigame and get the result on the server |
 | `SetVehicleTracker(vehicle)` | server | Put a GPS tracker on a car |
@@ -58,10 +59,14 @@ local passed = exports.tobs_minigames:Start("wires", "hard")
 exports.tobs_minigames:Lockpick({difficulty = "hard", pins = 6, time = 30})
 ```
 
-Two extra settings:
+Extra settings:
 
 - `fallback = "lockpick"`: if a GTA screen (drill, hack, safe) doesn't load, play this instead
+- `animate = false`: no animation on the player (use it when your script plays its own)
+- `animation = "tablet"`: a different animation for this call (`"tablet"`, `"phone"`, `"keypad"`, `"repair"`, `"kneel"`, `"hotwire"`)
 - `seed = 4`: the same puzzle every time (web games, for testing)
+
+The keypad also takes `code = "4721"` (a code the player already knows) with `show = 0` (not shown first).
 
 ### The result
 
@@ -76,6 +81,10 @@ The drill can never be finished faster than its `time`, so use it **instead of**
 ```lua
 local drilled = exports.tobs_minigames:Drill({time = 15000, fallback = "lockpick"})
 ```
+
+### Animations
+
+While a web minigame is open, the player holds a tablet, looks at a phone, presses a keypad, works with their hands or kneels, so others can see what's going on. Set per game in `MG.Animations` (`config.lua`); `animate = false` skips it for one call.
 
 ---
 
@@ -181,6 +190,12 @@ end)
 | `/tobtracker hard` | admins | Put a test tracker on the nearest car |
 
 `/tobtracker` needs `add_ace group.admin command.tobtracker allow`. The test commands give nothing. `MG.TestCommand = false` turns `/minigame` off.
+
+---
+
+## Drop-in replacements
+
+Scripts written for **qb-minigames** or **memorygame** can use tobs_minigames without being changed: put the folder from `compat/` in place of the original. See [compat/README.md](compat/README.md).
 
 ---
 

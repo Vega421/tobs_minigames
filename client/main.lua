@@ -65,6 +65,7 @@ local function RunWeb(name, o, style)
     SetNuiFocus(true, true) -- before opening, so an answer can never leave the focus on
     SendNUIMessage({action = "open", game = name, opts = o, text = MGTexts(), theme = MG.Theme, style = style or MG.Style,
         ui = {scale = MG.Scale, intro = MG.Intro, textSize = MG.TextSize, reducedMotion = MG.ReducedMotion}})
+    local anim = MGAnim.Start(name, o)
     local ped = PlayerPedId()
     local limit = (o.time or 240) + (o.show or 0) / 1000 + (tonumber(MG.Intro) or 0) + 15
     local deadline = GetGameTimer() + limit * 1000
@@ -74,7 +75,9 @@ local function RunWeb(name, o, style)
             Citizen.Wait(250)
         end
     end)
-    return Citizen.Await(p)
+    local result = Citizen.Await(p)
+    MGAnim.Stop(anim)
+    return result
 end
 
 -- style: only for the test menu, to try a look without changing the config
@@ -120,6 +123,7 @@ for name, export in pairs(MGGames) do
 end
 exports("Start", Call)
 exports("IsActive", function() return Active end)
+exports("GaveUp", function() return GaveUp end) -- the last web minigame ended with ESC
 
 -- For the test menu (client/testmenu.lua)
 MGRun = Run

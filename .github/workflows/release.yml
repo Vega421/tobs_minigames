@@ -21,7 +21,8 @@ jobs:
         run: |
           mkdir -p dist/tobs_minigames
           cp -r fxmanifest.lua config.lua locales shared client server web LICENSE README.md EXPORTS.md dist/tobs_minigames/
-          cd dist && zip -r "tobs_minigames-${GITHUB_REF_NAME}.zip" tobs_minigames
+          mkdir -p "dist/[tobs_minigames-compat]" && cp -r compat/qb-minigames compat/memorygame compat/README.md "dist/[tobs_minigames-compat]/"
+          cd dist && zip -r "tobs_minigames-${GITHUB_REF_NAME}.zip" tobs_minigames "[tobs_minigames-compat]"
 
       - name: Release notes from CHANGELOG.md
         run: python3 .github/release_notes.py "${GITHUB_REF_NAME}" > notes.md

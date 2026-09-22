@@ -148,13 +148,17 @@ The "faster than possible" limits are in `MG.MinTime` in `config.lua`.
 2. Add `ensure tobs_minigames` to `server.cfg`, before the scripts that use it.
 3. Test them in game with `/minigame` (see below).
 
+## Drop-in replacements
+
+Already have scripts that use **qb-minigames** (QBCore's bank, house and car scripts) or **memorygame**? Put the folder from [`compat/`](compat/README.md) in place of the original: those scripts then play tobs_minigames' games without any changes.
+
 ## Testing in game
 
 Type **`/minigame`** for the test menu: every minigame with its last result ("✓ Passed · 12.4 s · hard", failed, or a GTA screen that didn't load), a difficulty and a look to test with, and **Play all** to go through all twelve in a row (ESC in a game stops the run). The results also go to the F8 console. The menu can also put a test tracker on the nearest vehicle (admins, with `add_ace group.admin command.tobtracker allow`) and sweep it, to test the trackers on vehicles. `/minigame keypad hard` plays one straight away. Nothing is given or taken; `MG.TestCommand = false` turns it off.
 
 ## The window
 
-Every web minigame starts with a short "how to play" card (`MG.Intro` seconds, or SPACE / a click); keys are drawn as keycaps, lives as dots, the timer shows its seconds and warns when time runs low, and the end shows how it went ("Success · 12.4 s"). The window is the same share of the screen on any resolution (`MG.Scale`), and `MG.TextSize` and `MG.ReducedMotion` help players who need bigger text or less movement.
+While a web minigame is open the player holds a tablet, looks at a phone, presses a keypad or works with their hands, so others see it (`MG.Animations`). Every web minigame starts with a short "how to play" card (`MG.Intro` seconds, or SPACE / a click); keys are drawn as keycaps, lives as dots, the timer shows its seconds and warns when time runs low, and the end shows how it went ("Success · 12.4 s"). The window is the same share of the screen on any resolution (`MG.Scale`), and `MG.TextSize` and `MG.ReducedMotion` help players who need bigger text or less movement.
 
 ## Looks
 
@@ -177,7 +181,7 @@ Everything is in `config.lua`: the language (`MG.Locale`), the default difficult
 The rules of every minigame are tested outside the game on every push:
 
 ```bash
-lua5.4 tests/main_test.lua && lua5.4 tests/server_test.lua && lua5.4 tests/sweep_test.lua && lua5.4 tests/testmenu_test.lua && lua5.4 tests/drill_test.lua && lua5.4 tests/hack_test.lua && lua5.4 tests/safe_test.lua
+lua5.4 tests/main_test.lua && lua5.4 tests/server_test.lua && lua5.4 tests/sweep_test.lua && lua5.4 tests/testmenu_test.lua && lua5.4 tests/anims_test.lua && lua5.4 tests/compat_test.lua && lua5.4 tests/drill_test.lua && lua5.4 tests/hack_test.lua && lua5.4 tests/safe_test.lua
 node --test tests/web/logic.test.js
 ```
 

@@ -17,6 +17,7 @@ client_scripts {
     "client/drill.lua",
     "client/hack.lua",
     "client/safe.lua",
+    "client/anims.lua",
     "client/main.lua",
     "client/tracker.lua",
     "client/testmenu.lua",

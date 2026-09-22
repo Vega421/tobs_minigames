@@ -13,6 +13,15 @@ MG.Intro = 5 -- seconds a "how to play" card shows before the game starts by its
 MG.TextSize = 1.0 -- bigger or smaller text, e.g. 1.2
 MG.ReducedMotion = false -- true: no shaking, pulsing, blinking or scanlines
 
+-- What the player does while a web minigame is open, so others see it. Per game: "tablet",
+-- "phone", "keypad", "repair" (working with the hands), "kneel" or "hotwire" (GTA's own, in a car);
+-- false = nothing. MG.Animations = false turns them all off. A script that plays its own animation
+-- can skip this for one call with {animate = false}. (Drill, hack and safe don't use this.)
+MG.Animations = {
+    thermite = "tablet", fingerprint = "tablet", lasers = "tablet", tracker = "phone", keypad = "keypad",
+    wires = "repair", hotwire = "hotwire", lockpick = "kneel", keyfiling = "kneel",
+}
+
 -- Look of the web minigames: "default" (dark panel, orange), "terminal" (green hacker terminal with
 -- scanlines) or "glass" (frosted glass over the game)
 MG.Style = "default"

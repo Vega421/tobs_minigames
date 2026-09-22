@@ -230,12 +230,14 @@
   // KEYPAD: remember the code, then type it
   Games.keypad = function (g) {
     const o = g.o;
-    const code = M.keypadCode(g.rand, o.length || 5);
+    // o.code: a code the player already knows (e.g. from a note); with show = 0 it isn't shown first
+    const code = o.code != null && /^[0-9]{1,12}$/.test(String(o.code)) ? String(o.code) : M.keypadCode(g.rand, o.length || 5);
+    const showMs = o.show == null ? 2500 : Number(o.show);
     let attempts = o.attempts || 1;
     let input = '';
     let entering = false;
     const box = el('div', 'keypad');
-    const shown = el('div', 'code', code);
+    const shown = el('div', 'code', showMs > 0 ? code : '');
     const flash = el('div', 'flash');
     const keys = el('div', 'keys');
     box.append(shown, flash, keys);
@@ -265,13 +267,13 @@
       keys.append(b);
     });
     keys.style.visibility = 'hidden';
-    startTimer((o.show || 2500) / 1000, false);
+    if (showMs > 0) startTimer(showMs / 1000, false);
     g.onKey = (e) => {
       if (/^[0-9]$/.test(e.key)) press(e.key);
       else if (e.key === 'Backspace') press('back');
       else if (e.key === 'Enter') press('enter');
     };
-    setTimeout(() => {
+    const enter = () => {
       if (g.ended || game !== g) return;
       entering = true;
       shown.classList.add('hidden-code');
@@ -280,7 +282,8 @@
       counter(g.t.attempts, attempts);
       showInput();
       startTimer(o.time || 15);
-    }, o.show || 2500);
+    };
+    if (showMs > 0) setTimeout(enter, showMs); else enter();
   };
 
   // THERMITE: remember the squares that light up, then click them

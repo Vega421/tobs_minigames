@@ -22,4 +22,7 @@ All notable changes to tobs_minigames. Each version is also a [GitHub release](h
 - Key filing redrawn as a real key with filings, a radar sweep and a detailed car in the tracker sweep, sparks in the laser grid
 - Three looks for the web minigames (`MG.Style`): default, terminal (green hacker terminal) and glass (frosted glass), plus `MG.Theme` for your own colours on top
 - The server event `tobs_minigames:played` (player, game, result, time, reason) for logs, and `MG.MinTime` to change the "faster than possible" limits
+- **Drop-in replacements** in `compat/`: `qb-minigames` and `memorygame` with the same exports, so scripts written for them play tobs_minigames' games unchanged
+- **Animations while playing:** a tablet, phone, keypad, hands-on or kneeling animation per web game (`MG.Animations`), `animate = false` per call
+- The keypad takes a known code (`code`, `show = 0`); `GaveUp()` tells if the last game ended with ESC
 - `/minigame`: an in-game test menu with every game's last result, difficulty and look switches, Play all, and a test tracker (`/tobtracker`, admins) to try the trackers on vehicles; `/minigame <name> [difficulty]` plays one straight away
