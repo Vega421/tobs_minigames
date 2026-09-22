@@ -121,9 +121,21 @@ The "faster than possible" limits are in `MG.MinTime` in `config.lua`.
 2. Add `ensure tobs_minigames` to `server.cfg`, before the scripts that use it.
 3. Try each one in game with `/minigame keypad hard` (turn off with `MG.TestCommand = false`).
 
+## Looks
+
+The web minigames come in three styles, picked with `MG.Style` in `config.lua`:
+
+| Style | Look |
+| ----- | ---- |
+| `"default"` | A dark panel with an orange accent |
+| `"terminal"` | A green hacker terminal: monospace text, scanlines, a glow and a blinking cursor |
+| `"glass"` | A frosted glass panel over the game, with soft gradients |
+
+`MG.Theme` changes single colours on top of the style, for example `MG.Theme = {accent = "#3e7bfa"}`. Try them in `dev/preview.html`.
+
 ## Settings
 
-Everything is in `config.lua`: the language (`MG.Locale`), the default difficulty (`MG.Difficulty`), the web minigames' colours (`MG.Theme`, to match your server), the server's minimum times (`MG.MinTime`), and each minigame's settings for easy, medium and hard, with what every value does.
+Everything is in `config.lua`: the language (`MG.Locale`), the default difficulty (`MG.Difficulty`), the look (`MG.Style`) and colours (`MG.Theme`), the server's minimum times (`MG.MinTime`), and each minigame's settings for easy, medium and hard, with what every value does.
 
 ## Tests
 

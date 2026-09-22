@@ -7,16 +7,15 @@ MG.Sounds = true -- GTA's hacking sounds in the web minigames (clicks, right, wr
 -- /minigame <name> [easy|medium|hard] lets anyone try a minigame (it gives nothing). false = off
 MG.TestCommand = "minigame"
 
--- Colours of the web minigames, to match your server (any CSS colour)
-MG.Theme = {
-    accent = "#ff6b2c", -- the top line, timer, buttons, lit squares
-    background = "rgba(14, 16, 21, 0.96)", -- the panel
-    text = "#e8eaef",
-    muted = "#8a92a3", -- hints and counters
-    good = "#3ecf8e", -- right answers
-    bad = "#ff4d5e", -- mistakes
-    gold = "#f2c14e", -- the lockpick's sweet spot
-}
+-- Look of the web minigames: "default" (dark panel, orange), "terminal" (green hacker terminal with
+-- scanlines) or "glass" (frosted glass over the game)
+MG.Style = "default"
+
+-- Your own colours, on top of the style's (any CSS colour). Leave a colour out to keep the style's.
+-- accent: top line, timer, buttons, lit squares; background: the panel; text; muted: hints and
+-- counters; good: right answers; bad: mistakes and lasers; gold: the lockpick's sweet spot
+-- Example: MG.Theme = {accent = "#3e7bfa", gold = "#b58cff"}
+MG.Theme = {}
 
 -- Server: an answer to exports.tobs_minigames:Play that comes back faster than this (ms) counts as
 -- failed. Leave a game out to use the built-in guess: drill = its time - 1 s, safe = 1.5 s per number,

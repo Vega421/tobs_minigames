@@ -63,6 +63,12 @@
     setTimeout(() => post('done', { success }), 900);
   }
 
+  // MG.Style from config.lua: a class on the page that style.css turns into a look
+  const STYLES = ['default', 'terminal', 'glass'];
+  function applyStyle(style) {
+    document.documentElement.className = `style-${STYLES.includes(style) ? style : 'default'}`;
+  }
+
   // MG.Theme from config.lua: colours for the CSS variables in style.css
   const THEME_VARS = { accent: '--brand', background: '--bg', text: '--text', muted: '--muted', good: '--good', bad: '--bad', gold: '--gold' };
   function applyTheme(theme) {
@@ -75,6 +81,7 @@
 
   function open(data) {
     const t = data.text;
+    applyStyle(data.style);
     applyTheme(data.theme);
     game = { name: data.game, o: data.opts || {}, t, ended: false, rand: M.random(data.opts && data.opts.seed) };
     $('mg-title').textContent = t['title_' + data.game] || data.game;
@@ -458,13 +465,13 @@
     g.onKeyUp = (e) => { if (MOVE_KEYS[e.code]) keys[MOVE_KEYS[e.code]] = false; };
     const laser = cssColor('--bad') || '#ff4d5e';
     const draw = (t) => {
-      ctx.fillStyle = '#10131a';
+      ctx.fillStyle = cssColor('--floor');
       ctx.fillRect(0, 0, W, H);
-      ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+      ctx.strokeStyle = cssColor('--floor-line');
       ctx.lineWidth = 1;
       for (let x = 0; x < W; x += 24) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
       for (let y = 0; y < H; y += 24) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
-      ctx.fillStyle = 'rgba(255,255,255,0.05)';
+      ctx.fillStyle = cssColor('--floor-line');
       ctx.fillRect(0, 0, 0.08 * S, H);
       ctx.fillStyle = cssColor('--good') || '#3ecf8e';
       ctx.globalAlpha = 0.25;
@@ -610,12 +617,12 @@
     let found = null;
     const round = (x, y, w, h, r) => { ctx.beginPath(); ctx.roundRect ? ctx.roundRect(x, y, w, h, r) : ctx.rect(x, y, w, h); };
     const draw = (now) => {
-      ctx.fillStyle = '#10131a'; ctx.fillRect(0, 0, W, H);
-      ctx.fillStyle = '#1b1f28';
+      ctx.fillStyle = cssColor('--floor'); ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = cssColor('--car-wheel');
       for (const [x, y] of [[0.2, 0.1], [0.72, 0.1], [0.2, 0.78], [0.72, 0.78]]) { round(x * S, y * H, 0.09 * S, 0.12 * H, 6); ctx.fill(); }
-      ctx.fillStyle = '#2b313d'; ctx.strokeStyle = '#4a5160'; ctx.lineWidth = 2;
+      ctx.fillStyle = cssColor('--car-body'); ctx.strokeStyle = cssColor('--car-edge'); ctx.lineWidth = 2;
       round(0.1 * S, 0.14 * H, 0.8 * S, 0.72 * H, 40); ctx.fill(); ctx.stroke();
-      ctx.fillStyle = '#1e2330';
+      ctx.fillStyle = cssColor('--car-glass');
       round(0.3 * S, 0.22 * H, 0.1 * S, 0.56 * H, 10); ctx.fill();
       round(0.62 * S, 0.24 * H, 0.08 * S, 0.52 * H, 10); ctx.fill();
       for (const m of misses) {

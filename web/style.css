@@ -8,6 +8,14 @@
     --good: #3ecf8e;
     --bad: #ff4d5e;
     --gold: #f2c14e;
+    --font: "Segoe UI", system-ui, -apple-system, sans-serif;
+    --radius: 10px;
+    --floor: #10131a; /* laser room and tracker background */
+    --floor-line: rgba(255, 255, 255, 0.05);
+    --car-wheel: #1b1f28;
+    --car-body: #2b313d;
+    --car-edge: #4a5160;
+    --car-glass: #1e2330;
 }
 
 * { box-sizing: border-box; }
@@ -16,7 +24,7 @@ html, body {
     margin: 0;
     height: 100%;
     background: transparent;
-    font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+    font-family: var(--font);
     color: var(--text);
     user-select: none;
     overflow: hidden;
@@ -39,7 +47,7 @@ html, body {
     background: var(--bg);
     border: 1px solid var(--line);
     border-top: 3px solid var(--brand);
-    border-radius: 10px;
+    border-radius: var(--radius);
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
     padding: 20px 24px 16px;
 }
@@ -54,6 +62,7 @@ h1 { margin: 0; font-size: 20px; font-weight: 600; letter-spacing: 0.02em; }
 main { min-height: 260px; display: flex; align-items: center; justify-content: center; }
 
 footer { display: flex; justify-content: space-between; gap: 12px; margin-top: 16px; font-size: 13px; color: var(--muted); }
+#mg-giveup { white-space: nowrap; }
 
 #mg-result {
     position: absolute;
@@ -61,7 +70,7 @@ footer { display: flex; justify-content: space-between; gap: 12px; margin-top: 1
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 10px;
+    border-radius: var(--radius);
     font-size: 30px;
     font-weight: 700;
     letter-spacing: 0.04em;
@@ -182,3 +191,80 @@ canvas.car { cursor: crosshair; }
 .cut .line { position: absolute; left: -2px; right: -2px; height: 2px; background: var(--good); }
 .cut.selected { outline: 2px solid var(--brand); outline-offset: 2px; }
 .cut.ok .metal { background: linear-gradient(90deg, #9bd8b8, #6fbf97); }
+
+/* ---------------------------------------------------------------------------------------------
+   STYLES (MG.Style). Each one sets its own colours; MG.Theme colours still win over these.
+   --------------------------------------------------------------------------------------------- */
+
+/* Terminal: green text on black, scanlines and a glow, like an old computer */
+.style-terminal {
+    --bg: rgba(2, 10, 4, 0.97);
+    --panel: #051208;
+    --line: #10421f;
+    --text: #b8ffc8;
+    --muted: #4fa566;
+    --brand: #33ff66;
+    --good: #33ff66;
+    --bad: #ff3b3b;
+    --gold: #d4ff3a;
+    --font: "Consolas", "Lucida Console", "Courier New", monospace;
+    --radius: 2px;
+    --floor: #020803;
+    --floor-line: rgba(51, 255, 102, 0.08);
+    --car-wheel: #041a0a;
+    --car-body: #062d12;
+    --car-edge: #33ff66;
+    --car-glass: #031006;
+}
+.style-terminal .panel { border: 1px solid var(--brand); box-shadow: 0 0 28px rgba(51, 255, 102, 0.22), inset 0 0 40px rgba(51, 255, 102, 0.05); }
+.style-terminal .panel::after {
+    content: ""; position: absolute; inset: 0; pointer-events: none; border-radius: var(--radius);
+    background: repeating-linear-gradient(transparent 0 2px, rgba(0, 0, 0, 0.28) 2px 3px);
+}
+.style-terminal .panel, .style-terminal button { text-shadow: 0 0 6px rgba(51, 255, 102, 0.55); }
+.style-terminal h1 { text-transform: uppercase; letter-spacing: 0.12em; }
+.style-terminal h1::before { content: "> "; color: var(--brand); }
+.style-terminal h1::after { content: "_"; animation: caret 1s steps(1) infinite; }
+@keyframes caret { 50% { opacity: 0; } }
+.style-terminal .timer { border-radius: 0; height: 6px; }
+.style-terminal #mg-timer { background: repeating-linear-gradient(90deg, var(--brand) 0 8px, transparent 8px 10px); }
+.style-terminal button { background: transparent; border-color: var(--line); border-radius: 0; }
+.style-terminal button:hover { border-color: var(--brand); background: rgba(51, 255, 102, 0.08); }
+.style-terminal .keys .enter { background: var(--brand); color: #020803; text-shadow: none; }
+.style-terminal .cell, .style-terminal .wire-box, .style-terminal .track, .style-terminal .hw-term,
+.style-terminal .meter, .style-terminal canvas { border-radius: 0; }
+.style-terminal #mg-result { background: rgba(2, 10, 4, 0.92); text-transform: uppercase; letter-spacing: 0.2em; }
+
+/* Glass: a frosted panel over the game, soft edges and gradients */
+.style-glass {
+    --bg: rgba(22, 26, 38, 0.55);
+    --panel: rgba(255, 255, 255, 0.06);
+    --line: rgba(255, 255, 255, 0.14);
+    --text: #f3f5fa;
+    --muted: #b7bfd1;
+    --brand: #7c8cff;
+    --good: #4ade9c;
+    --bad: #ff6b81;
+    --gold: #ffd166;
+    --font: "Segoe UI", system-ui, -apple-system, sans-serif;
+    --radius: 20px;
+    --floor: rgba(10, 13, 22, 0.55);
+    --floor-line: rgba(255, 255, 255, 0.06);
+    --car-wheel: #11141c;
+    --car-body: #353b4a;
+    --car-edge: rgba(255, 255, 255, 0.4);
+    --car-glass: #1c202c;
+}
+.style-glass #mg { background: rgba(0, 0, 0, 0.15); }
+.style-glass .panel {
+    border: 1px solid rgba(255, 255, 255, 0.18); border-top: 1px solid rgba(255, 255, 255, 0.32);
+    backdrop-filter: blur(22px) saturate(150%); -webkit-backdrop-filter: blur(22px) saturate(150%);
+    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+.style-glass .timer { height: 6px; border-radius: 3px; background: rgba(255, 255, 255, 0.1); }
+.style-glass #mg-timer { background: linear-gradient(90deg, var(--brand), #c084fc); border-radius: 3px; }
+.style-glass button { background: rgba(255, 255, 255, 0.08); border-color: rgba(255, 255, 255, 0.16); border-radius: 12px; }
+.style-glass .keys .enter { background: linear-gradient(135deg, var(--brand), #c084fc); border: 0; color: #fff; }
+.style-glass .cell, .style-glass .hw-term { border-radius: 10px; }
+.style-glass .wire-box, .style-glass .track, .style-glass .meter, .style-glass canvas { border-radius: 14px; }
+.style-glass #mg-result { border-radius: var(--radius); background: rgba(22, 26, 38, 0.7); backdrop-filter: blur(8px); }
