@@ -34,6 +34,21 @@
   };
   L.keypadCheck = (code, input) => String(input) === String(code);
 
+  // THERMITE: remember which squares of a grid lit up
+
+  // `count` different squares (0 .. size*size-1) of a size x size grid
+  L.thermiteSquares = function (rand, size, count) {
+    const all = [...Array(size * size).keys()];
+    return L.shuffle(rand, all).slice(0, Math.max(1, Math.min(count, all.length)));
+  };
+  // Clicking square i when `found` squares are already found: "hit", "done" (the last one),
+  // "again" (already found) or "miss"
+  L.thermiteClick = function (squares, found, i) {
+    if (found.includes(i)) return 'again';
+    if (!squares.includes(i)) return 'miss';
+    return found.length + 1 === squares.length ? 'done' : 'hit';
+  };
+
   // WIRES: every wire has its own colour, so each clue points at exactly one wire
 
   L.COLORS = ['red', 'blue', 'yellow', 'green', 'white', 'black', 'orange', 'purple'];

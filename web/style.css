@@ -90,6 +90,14 @@ button:hover { border-color: var(--brand); }
 .keys button { height: 52px; font-size: 20px; }
 .keys .enter { background: var(--brand); border-color: var(--brand); color: #111; font-weight: 700; }
 
+/* Thermite */
+.grid { display: grid; gap: 6px; width: min(340px, 100%); aspect-ratio: 1; }
+.cell { background: var(--panel); border: 1px solid var(--line); border-radius: 4px; cursor: pointer; transition: background 0.12s; }
+.cell:hover { border-color: #4a5160; }
+.cell.lit { background: var(--brand); border-color: var(--brand); box-shadow: 0 0 12px rgba(255, 107, 44, 0.55); }
+.cell.hit { background: var(--good); border-color: var(--good); }
+.cell.miss { background: var(--bad); border-color: var(--bad); }
+
 /* Wires */
 .wires { display: grid; grid-template-columns: 1fr 240px; gap: 24px; width: 100%; align-items: center; }
 .wire-box { display: flex; flex-direction: column; gap: 14px; padding: 16px; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; }

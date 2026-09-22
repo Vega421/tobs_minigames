@@ -2,6 +2,8 @@
 --
 --   exports.tobs_minigames:Drill(opts)        GTA's Fleeca drilling screen
 --   exports.tobs_minigames:Hack(opts)         GTA's hacking laptop (HackConnect + BruteForce)
+--   exports.tobs_minigames:Safe(opts)         GTA's safe dial: turn to each number, turn back on the click
+--   exports.tobs_minigames:Thermite(opts)     remember which squares lit up, click them
 --   exports.tobs_minigames:Keypad(opts)       remember a code, type it
 --   exports.tobs_minigames:Wires(opts)        cut the wires in the right order
 --   exports.tobs_minigames:Lockpick(opts)     set each pin in its sweet spot
@@ -11,11 +13,11 @@
 --
 -- opts: nil (MG.Difficulty), "easy" / "medium" / "hard", or a table ({difficulty = "hard", pins = 6})
 -- that overrides the settings in config.lua. Each call waits until the game ends and returns true
--- (passed) or false (failed, gave up, died, another game already open). Drill and Hack return nil
--- when GTA's screen didn't load, so the script can use something else.
+-- (passed) or false (failed, gave up, died, another game already open). Drill, Hack and Safe return
+-- nil when GTA's screen didn't load, so the script can use something else.
 -- The result is decided in the player's game: a server must still check anything that pays out.
 
-local Games = {drill = "Drill", hack = "Hack", keypad = "Keypad", wires = "Wires", lockpick = "Lockpick", fingerprint = "Fingerprint"}
+local Games = {drill = "Drill", hack = "Hack", safe = "Safe", thermite = "Thermite", keypad = "Keypad", wires = "Wires", lockpick = "Lockpick", fingerprint = "Fingerprint"}
 local Levels = {easy = true, medium = true, hard = true}
 local Active = false
 local Pending -- the web game's promise while one is open
@@ -73,7 +75,7 @@ end
 local function Run(name, opts)
     if type(name) == "string" then name = name:lower() end
     if Games[name] == nil then
-        print(("^1[tobs_minigames] Unknown minigame '%s'. Use: drill, hack, keypad, wires, lockpick, fingerprint^7"):format(tostring(name)))
+        print(("^1[tobs_minigames] Unknown minigame '%s'. Use: drill, hack, safe, thermite, keypad, wires, lockpick, fingerprint^7"):format(tostring(name)))
         return false
     end
     if Active then return false end
@@ -82,6 +84,7 @@ local function Run(name, opts)
     local ok, result = pcall(function()
         if name == "drill" then return MGDrill.Start(o) end
         if name == "hack" then return MGHack.Start(o) end
+        if name == "safe" then return MGSafe.Start(o) end
         return RunWeb(name, o)
     end)
     Active = false

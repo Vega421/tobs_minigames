@@ -2,7 +2,7 @@
 
 # tobs_minigames
 
-**Six minigames any FiveM script can use: GTA's own drill and hacking laptop, plus a keypad, wire cutting, a lockpick and a fingerprint match**
+**Eight minigames any FiveM script can use: GTA's own drill, hacking laptop and safe dial, plus thermite, a keypad, wire cutting, a lockpick and a fingerprint match**
 
 [![Release](https://img.shields.io/github/v/release/Vega421/tobs_minigames?style=flat-square&color=ff6b2c&label=release)](https://github.com/Vega421/tobs_minigames/releases/latest)
 [![Tests](https://img.shields.io/github/actions/workflow/status/Vega421/tobs_minigames/tests.yml?style=flat-square&label=tests)](https://github.com/Vega421/tobs_minigames/actions/workflows/tests.yml)
@@ -22,12 +22,14 @@ One call from your script opens a minigame and tells you whether the player pass
 | -------- | -------------------- |
 | **Drill** | GTA Online's Fleeca drilling screen: push the drill through 4 lock pins without overheating it |
 | **Hack** | GTA Online's hacking laptop: HackConnect.exe (find the IP), then BruteForce.exe (crack the password) |
+| **Safe** | GTA V's safe dial: turn to each number, and turn back when the tumbler clicks |
+| **Thermite** | Squares light up on a grid; click the same ones from memory |
 | **Keypad** | Remember a code, then type it before the time runs out |
 | **Wires** | Cut the wires in the order the clues give ("the wire right below red") |
 | **Lockpick** | Set each pin by stopping the pick in its sweet spot |
 | **Fingerprint** | Pick the 4 pieces of a fingerprint from a set with decoys |
 
-Every minigame has an easy, medium and hard setting, and every setting can be changed. The web minigames are in English, Danish, German, Swedish, Norwegian and Dutch.
+The drill, laptop and safe use GTA's own screens, sounds and animations. Every minigame has an easy, medium and hard setting, and every setting can be changed. The web minigames are in English, Danish, German, Swedish, Norwegian and Dutch.
 
 ## Use it in your script
 
@@ -46,7 +48,8 @@ end
 ```
 
 - Returns `true` when the player passed, `false` when they failed, gave up (ESC), died, or another minigame was already open.
-- `Drill` and `Hack` return `nil` when GTA's screen couldn't load.
+- `Drill`, `Hack` and `Safe` return `nil` when GTA's screen couldn't load.
+- `Safe({animate = true})` also plays GTA's safe cracking animations on the player: stand them at the safe first.
 - `exports.tobs_minigames:IsActive()` is `true` while a minigame is open.
 - The drill can never be finished faster than its `time`, so it replaces a progress bar: don't run both.
 
@@ -67,10 +70,10 @@ Everything is in `config.lua`: the language (`MG.Locale`), the default difficult
 The rules of every minigame are tested outside the game on every push:
 
 ```bash
-lua5.4 tests/main_test.lua && lua5.4 tests/drill_test.lua && lua5.4 tests/hack_test.lua
+lua5.4 tests/main_test.lua && lua5.4 tests/drill_test.lua && lua5.4 tests/hack_test.lua && lua5.4 tests/safe_test.lua
 node --test tests/web/
 ```
 
 ## Credits
 
-Made by Vega. GPL-3.0. The drill's scaleform method names come from [meta-hub/fivem-drilling](https://github.com/meta-hub/fivem-drilling) (GPL-3.0). The hacking laptop's method names and click results were looked up in [TransitNode/Hacking_PC](https://github.com/TransitNode/Hacking_PC) and draobrehtom's HackingGame gist; no code was copied from them. Sound names were checked against [DurtyFree/gta-v-data-dumps](https://github.com/DurtyFree/gta-v-data-dumps).
+Made by Vega. GPL-3.0. The drill's scaleform method names come from [meta-hub/fivem-drilling](https://github.com/meta-hub/fivem-drilling) (GPL-3.0). The hacking laptop's method names and click results were looked up in [TransitNode/Hacking_PC](https://github.com/TransitNode/Hacking_PC) and draobrehtom's HackingGame gist; no code was copied from them. The safe dial's sprite names were looked up in [TimothyDexter/FiveM-SafeCrackingMinigame](https://github.com/TimothyDexter/FiveM-SafeCrackingMinigame) (no license, names only). Sound, animation and audio bank names were checked against [DurtyFree/gta-v-data-dumps](https://github.com/DurtyFree/gta-v-data-dumps).

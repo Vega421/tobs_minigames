@@ -133,6 +133,49 @@
     }, o.show || 2500);
   };
 
+  // THERMITE: remember the squares that light up, then click them
+  Games.thermite = function (g) {
+    const o = g.o;
+    const size = o.size || 6;
+    const squares = M.thermiteSquares(g.rand, size, o.squares || 7);
+    const found = [];
+    let mistakes = o.mistakes || 0;
+    let clicking = false;
+    const grid = el('div', 'grid');
+    grid.style.gridTemplateColumns = `repeat(${size}, 1fr)`;
+    const cells = [...Array(size * size).keys()].map((i) => {
+      const c = el('div', 'cell' + (squares.includes(i) ? ' lit' : ''));
+      c.onclick = () => {
+        if (!clicking || g.ended) return;
+        const r = M.thermiteClick(squares, found, i);
+        if (r === 'again') return;
+        if (r === 'miss') {
+          c.classList.add('miss');
+          mistakes -= 1;
+          status(`${g.t.mistakes}: ${Math.max(0, mistakes)}`);
+          if (mistakes < 0) return finish(false);
+          return;
+        }
+        found.push(i);
+        c.classList.add('hit');
+        if (r === 'done') finish(true);
+      };
+      grid.append(c);
+      return c;
+    });
+    $('mg-body').append(grid);
+    $('mg-hint').textContent = g.t.thermite_memorize;
+    startTimer((o.show || 2500) / 1000, false);
+    setTimeout(() => {
+      if (g.ended || game !== g) return;
+      clicking = true;
+      cells.forEach((c) => c.classList.remove('lit'));
+      $('mg-hint').textContent = g.t.thermite_click;
+      status(`${g.t.mistakes}: ${mistakes}`);
+      startTimer(o.time || 12);
+    }, o.show || 2500);
+  };
+
   // WIRES: cut them in the order of the clues
   Games.wires = function (g) {
     const o = g.o;

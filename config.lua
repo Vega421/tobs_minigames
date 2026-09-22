@@ -30,6 +30,25 @@ MG.Hack = {
     hard = {lives = 3, timeLimit = 50},
 }
 
+-- GTA V's safe dial. numbers: numbers in the combination; tolerance: how close to the number the dial
+-- must be when turning back; lives: wrong turns allowed; time: seconds; speed / slowSpeed: numbers
+-- per second (SHIFT turns slowly); animate: play GTA's safe cracking animations on the player
+-- (stand the player at the safe first)
+MG.Safe = {
+    speed = 22, slowSpeed = 6, animate = false,
+    easy = {numbers = 2, tolerance = 3, lives = 3, time = 75},
+    medium = {numbers = 3, tolerance = 2, lives = 2, time = 60},
+    hard = {numbers = 4, tolerance = 1, lives = 1, time = 50},
+}
+
+-- Squares light up on a grid; click the same ones from memory. size: squares per side; squares:
+-- how many light up; show: ms they're visible; mistakes: wrong clicks allowed; time: seconds to click
+MG.Thermite = {
+    easy = {size = 5, squares = 5, show = 3000, mistakes = 2, time = 15},
+    medium = {size = 6, squares = 7, show = 2500, mistakes = 1, time = 12},
+    hard = {size = 7, squares = 10, show = 2000, mistakes = 0, time = 10},
+}
+
 -- A code flashes on screen; type it on the keypad. show: ms the code is visible; time: seconds
 -- to type it; attempts: wrong codes allowed
 MG.Keypad = {
