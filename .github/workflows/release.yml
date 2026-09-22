@@ -1,0 +1,33 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  tests:
+    uses: ./.github/workflows/tests.yml
+
+  release:
+    needs: tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build zip
+        run: |
+          mkdir -p dist/tobs_minigames
+          cp -r fxmanifest.lua config.lua locales client web LICENSE README.md dist/tobs_minigames/
+          cd dist && zip -r "tobs_minigames-${GITHUB_REF_NAME}.zip" tobs_minigames
+
+      - name: Release notes from CHANGELOG.md
+        run: python3 .github/release_notes.py "${GITHUB_REF_NAME}" > notes.md
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          name: tobs_minigames ${{ github.ref_name }}
+          body_path: notes.md
+          files: dist/*.zip
