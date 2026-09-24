@@ -528,8 +528,8 @@
       ctx.scale(2, 2);
       ctx.translate(-(part % 2) * size / 2, -Math.floor(part / 2) * size / 2);
     }
-    ctx.strokeStyle = '#8fd3ff';
-    ctx.lineWidth = part !== undefined ? 1.1 : 1.6;
+    ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--print').trim() || '#8fd3ff';
+    ctx.lineWidth = part !== undefined ? 1.3 : 1.8;
     ctx.lineCap = 'round';
     for (const line of M.ridges(seed)) {
       ctx.beginPath();
@@ -539,53 +539,143 @@
     ctx.restore();
   }
 
+  // Like the Casino heist's clone hack: pick the 4 pieces of the print on the right with the arrow keys
+  // (or the mouse), check with TAB. Several prints in a row (`prints`), a scramble timer that shuffles
+  // the pieces (`scramble`), and a wrong check costs an attempt (`lives`).
   Games.fingerprint = function (g) {
     const o = g.o;
-    const print = M.makeFingerprint(g.rand, o.decoys || 6);
+    const total = Math.max(1, o.prints || 1);
+    const scrambleSecs = Number(o.scramble) || 0;
     let lives = o.lives || 1;
-    let selected = [];
-    const wrap = el('div', 'print');
-    const side = el('div', 'print-side');
-    const target = el('canvas');
-    target.width = target.height = 220;
-    drawPrint(target, print.seed);
-    const scanner = el('div', 'screen scanner');
-    scanner.append(target);
-    const check = el('button', '', g.t.check);
-    const flash = el('div', 'flash');
-    side.append(scanner, check, flash);
+    let done = 0, cursor = 0, busy = false;
+    let print, pieces, selected, scrambleAt;
+
+    const screen = el('div', 'screen fp-screen');
+    // the top line: prints cloned so far, and the scramble countdown
+    const top = el('div', 'fp-top');
+    const prints = el('div', 'fp-prints');
+    prints.append(el('span', 'fp-label', g.t.fp_prints));
+    const boxes = [...Array(total)].map(() => { const b = el('span', 'fp-box'); prints.append(b); return b; });
+    const scr = el('div', 'fp-scramble');
+    const scrBar = el('div', 'fp-scramble-bar');
+    const scrFill = el('div', 'fp-scramble-fill');
+    scrBar.append(scrFill);
+    const scrText = el('span', 'fp-scramble-text');
+    scr.append(el('span', 'fp-label', g.t.fp_scramble), scrBar, scrText);
+    if (!scrambleSecs) scr.classList.add('hidden');
+    top.append(prints, scr);
+
+    const main = el('div', 'fp-main');
     const grid = el('div', 'pieces');
-    const tiles = print.pieces.map((p, i) => {
-      const c = el('canvas');
-      c.width = c.height = 110;
-      drawPrint(c, p.seed, p.part);
-      c.onclick = () => {
-        if (g.ended) return;
-        if (selected.includes(i)) selected = selected.filter((s) => s !== i);
-        else if (selected.length < 4) selected.push(i);
-        else return;
-        sound('click');
-        tiles.forEach((t, j) => t.classList.toggle('selected', selected.includes(j)));
-      };
-      grid.append(c);
-      return c;
-    });
-    check.onclick = () => {
-      if (g.ended || selected.length !== 4) return;
-      if (M.fingerprintCheck(print.pieces, selected)) return finish(true);
+    const scanner = el('div', 'scanner');
+    const target = el('canvas');
+    target.width = target.height = 320;
+    const stamp = el('div', 'fp-stamp hidden', g.t.fp_cloned);
+    scanner.append(target, stamp);
+    main.append(grid, scanner);
+    screen.append(top, main);
+
+    const bottom = el('div', 'fp-bottom');
+    const check = el('button', 'fp-check');
+    setText(check, `[TAB] ${g.t.check}`);
+    const flash = el('div', 'flash');
+    bottom.append(flash, check);
+    $('mg-body').append(device('print-dev', screen, bottom));
+
+    let tiles = [];
+    const render = () => {
+      grid.textContent = '';
+      const cols = M.fpColumns(pieces.length);
+      grid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+      tiles = pieces.map((p, i) => {
+        const c = p.canvas;
+        c.classList.toggle('selected', selected.includes(p));
+        c.classList.toggle('cursor', i === cursor);
+        c.classList.remove('wrong');
+        c.onclick = () => { cursor = i; toggle(); };
+        grid.append(c);
+        return c;
+      });
+    };
+    const newPrint = () => {
+      print = M.makeFingerprint(g.rand, o.decoys ?? 4);
+      pieces = print.pieces.map((p) => {
+        const c = el('canvas');
+        c.width = c.height = 120;
+        drawPrint(c, p.seed, p.part);
+        return Object.assign({}, p, { canvas: c });
+      });
+      selected = [];
+      cursor = 0;
+      drawPrint(target, print.seed);
+      stamp.classList.add('hidden');
+      scrambleAt = scrambleSecs ? performance.now() + scrambleSecs * 1000 : null;
+      render();
+    };
+    const toggle = () => {
+      if (g.ended || busy) return;
+      const p = pieces[cursor];
+      if (selected.includes(p)) selected = selected.filter((s) => s !== p);
+      else if (selected.length < 4) selected.push(p);
+      else return sound('bad');
+      sound('click');
+      render();
+    };
+    const tryCheck = () => {
+      if (g.ended || busy) return;
+      if (selected.length !== 4) return sound('bad'); // 4 pieces first
+      const picked = selected.map((p) => pieces.indexOf(p));
+      if (M.fingerprintCheck(pieces, picked)) {
+        boxes[done].classList.add('on');
+        done += 1;
+        flash.textContent = '';
+        if (done >= total) return finish(true);
+        // the stamp on the print, then the next one
+        busy = true;
+        stamp.classList.remove('hidden');
+        sound('good');
+        setTimeout(() => { if (g.ended || game !== g) return; busy = false; newPrint(); }, 900);
+        return;
+      }
       lives -= 1;
-      counter(g.t.lives, lives);
+      counter(g.t.lives, Math.max(0, lives));
+      tiles.forEach((t, i) => { if (picked.includes(i)) t.classList.add('wrong'); });
       if (lives <= 0) return finish(false, g.t.no_match);
       sound('bad');
       flash.textContent = g.t.no_match;
       selected = [];
-      tiles.forEach((t) => t.classList.remove('selected'));
+      setTimeout(() => { if (!g.ended && game === g) render(); }, 450);
     };
-    wrap.append(side, grid);
-    $('mg-body').append(device('print-dev', wrap));
+    check.onclick = tryCheck;
+    const DIRS = { ArrowUp: 'up', KeyW: 'up', ArrowDown: 'down', KeyS: 'down', ArrowLeft: 'left', KeyA: 'left', ArrowRight: 'right', KeyD: 'right' };
+    g.onKey = (e) => {
+      if (DIRS[e.code]) {
+        e.preventDefault();
+        const next = M.fpMove(cursor, DIRS[e.code], pieces.length, M.fpColumns(pieces.length));
+        if (next !== cursor) { cursor = next; sound('move'); render(); }
+      } else if (e.code === 'Space' || e.code === 'Enter') { e.preventDefault(); toggle(); }
+      else if (e.code === 'Tab') { e.preventDefault(); tryCheck(); }
+    };
+    g.frame = (now) => {
+      if (!scrambleAt || busy) return;
+      const left = scrambleAt - now;
+      scrFill.style.transform = `scaleX(${Math.max(0, left / (scrambleSecs * 1000))})`;
+      scrText.textContent = `${Math.max(0, Math.ceil(left / 1000))} s`;
+      if (left <= 0) {
+        const at = pieces[cursor];
+        pieces = M.fpScramble(g.rand, pieces);
+        selected = [];
+        cursor = Math.max(0, pieces.indexOf(at));
+        flash.textContent = g.t.fp_scrambled;
+        sound('bad');
+        scrambleAt = now + scrambleSecs * 1000;
+        render();
+      }
+    };
+    newPrint();
     setText($('mg-hint'), g.t.fingerprint_hint);
     counter(g.t.lives, lives);
-    startTimer(o.time || 25);
+    startTimer(o.time || 40);
   };
 
   // A CSS variable's current colour (the theme), for drawing on canvases

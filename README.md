@@ -27,7 +27,7 @@ One call from your script opens a minigame and tells you whether the player pass
 | **Keypad** | Remember a code, then type it |
 | **Wires** | Cut the wires in the order of the clues |
 | **Lockpick** | Stop the pick in each pin's sweet spot |
-| **Fingerprint** | Pick the 4 pieces of a fingerprint |
+| **Fingerprint** | Clone prints like the Casino heist: pick the 4 pieces of each print, TAB to check, before the pieces scramble |
 | **Hotwire** | Connect each wire to the terminal with its colour's name |
 | **Lasers** | Cross a room without touching the moving lasers |
 | **Key filing** | File each cut of a key down to its line |

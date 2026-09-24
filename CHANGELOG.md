@@ -10,7 +10,8 @@ All notable changes to tobs_minigames. Each version is also a [GitHub release](h
 - **Hack:** GTA Online's hacking laptop: HackConnect.exe, then BruteForce.exe, with shared lives and a time limit
 - **Safe:** GTA V's safe dial, with its tumbler sounds, a controller buzz on each click, and optional safe cracking animations
 - **Thermite:** remember the squares that light up on a grid
-- **Keypad, wire cutting, lockpick and fingerprint:** new web minigames
+- **Keypad, wire cutting and lockpick:** new web minigames
+- **Fingerprint:** clone prints like the Casino heist's hack: pick the 4 pieces of the print with the arrow keys or the mouse, check with TAB, several prints in a row (`prints`), and a scramble timer that shuffles the pieces (`scramble`). Our own version: no game files copied
 - **Hotwire, laser grid, key filing and tracker sweep:** web minigames for car theft, heists and stolen cars. Every laser room is checked to be crossable in time
 - Easy, medium and hard for each, and every setting can be changed by the calling script
 - **Easy to build in:** `exports.tobs_minigames:Play(playerId, name, opts)` runs a game from the server (one answer, from that player, not faster than possible); client exports wait in a thread or take a callback; `fallback` plays another game when a GTA screen doesn't load; the `tobs_minigames:finished` event reports every result

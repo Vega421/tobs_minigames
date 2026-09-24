@@ -155,10 +155,12 @@ MG.Lockpick = {
     hard = {pins = 5, zone = 0.09, speed = 1.4, lives = 1},
 }
 
--- Pick the 4 pieces of the fingerprint shown. decoys: wrong pieces among them; time: seconds;
--- lives: wrong guesses allowed
+-- Clone a fingerprint, like the Casino heist's hack: pick the 4 pieces of the print shown, then check
+-- (TAB). prints: prints to clone in a row; decoys: wrong pieces among them (4 = 8 pieces, like the
+-- Casino); time: seconds for all prints; lives: wrong checks allowed; scramble: seconds until the
+-- pieces are shuffled (and your picks cleared), 0 = never
 MG.Fingerprint = {
-    easy = {decoys = 4, time = 30, lives = 3},
-    medium = {decoys = 6, time = 25, lives = 2},
-    hard = {decoys = 8, time = 20, lives = 1},
+    easy = {prints = 1, decoys = 4, time = 40, lives = 3, scramble = 0},
+    medium = {prints = 2, decoys = 4, time = 60, lives = 3, scramble = 25},
+    hard = {prints = 3, decoys = 6, time = 75, lives = 2, scramble = 15},
 }

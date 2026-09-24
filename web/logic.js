@@ -117,6 +117,26 @@
   };
   L.fingerprintCheck = (pieces, selected) =>
     selected.length === 4 && new Set(selected).size === 4 && selected.every((i) => pieces[i] && pieces[i].correct);
+  // How many pieces a row of the grid holds: 2 like the Casino's clone screen, 3 when there are many
+  L.fpColumns = (count) => (count > 10 ? 3 : 2);
+  // The cursor on the grid of pieces: up / down / left / right, stopping at the edges
+  L.fpMove = function (cursor, dir, count, cols) {
+    const row = Math.floor(cursor / cols), col = cursor % cols, rows = Math.ceil(count / cols);
+    let r = row, c = col;
+    if (dir === 'up') r = Math.max(0, row - 1);
+    else if (dir === 'down') r = Math.min(rows - 1, row + 1);
+    else if (dir === 'left') c = Math.max(0, col - 1);
+    else if (dir === 'right') c = Math.min(cols - 1, col + 1);
+    const next = r * cols + c;
+    return next < count ? next : cursor;
+  };
+  // Scramble: the same pieces in a new order, never the order they had
+  L.fpScramble = function (rand, pieces) {
+    if (pieces.length < 2) return pieces.slice();
+    let next;
+    do { next = L.shuffle(rand, pieces); } while (next.every((p, i) => p === pieces[i]));
+    return next;
+  };
 
   // The ridge lines of a print as polylines of {x, y} points in 0-1, different for every seed:
   // rings around a core, bent by a few waves, with gaps like real ridges

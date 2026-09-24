@@ -17,6 +17,7 @@
     --timer: #f2f3f5; /* the timer bar: white like GTA's */
     --heat: #ffb347; /* a lit thermite pad */
     --scan: #8fd3ff; /* the tracker's radar and the laser grid's dot */
+    --print: #8fd3ff; /* the fingerprint cloner's screen */
     --font: "Segoe UI", system-ui, -apple-system, sans-serif;
     --title-font: "Oswald", "Arial Narrow", "Segoe UI", sans-serif;
     --radius: 3px;
@@ -345,24 +346,48 @@ button:hover { background: #f2f3f5; border-color: #f2f3f5; color: #111; }
 .pick { position: absolute; top: 3px; bottom: 3px; width: 4px; margin-left: -2px; border-radius: 2px; background: linear-gradient(90deg, #8d939c, #fff, #8d939c); box-shadow: 0 0 6px rgba(255, 255, 255, 0.6); }
 .pick::before { content: ""; position: absolute; top: -1px; left: -3px; width: 10px; height: 6px; border-radius: 3px; background: #dfe3e8; }
 
-/* Fingerprint: a scanner with a blue glass, and the pieces on small screens */
-.print-dev { width: 100%; }
-.print { display: grid; grid-template-columns: 232px 1fr; gap: 22px; width: 100%; align-items: start; }
-.scanner { position: relative; padding: 6px; background: #06121c; overflow: hidden; --screen-glow: 0 0 18px rgba(80, 180, 255, 0.25); }
-.scanner canvas { display: block; }
+/* Fingerprint: a print cloner like the Casino heist's: the pieces on the left, the print on the
+   right, prints cloned and the scramble timer on top */
+.panel.game-fingerprint { width: 720px; }
+.print-dev { width: 100%; display: flex; flex-direction: column; gap: 12px; }
+.fp-screen {
+    display: flex; flex-direction: column; gap: 12px; padding: 12px 14px 14px; color: var(--print);
+    background: linear-gradient(rgba(143, 211, 255, 0.05) 1px, transparent 1px) 0 0 / 100% 16px,
+                linear-gradient(90deg, rgba(143, 211, 255, 0.05) 1px, transparent 1px) 0 0 / 16px 100%, #04101a;
+    --screen-glow: 0 0 18px rgba(80, 180, 255, 0.2);
+}
+.fp-top { display: flex; justify-content: space-between; align-items: center; gap: 16px; font: 700 12px var(--title-font); letter-spacing: 0.14em; text-transform: uppercase; }
+.fp-prints, .fp-scramble { display: flex; align-items: center; gap: 6px; }
+.fp-label { margin-right: 4px; opacity: 0.8; }
+.fp-box { width: 14px; height: 14px; border: 1.5px solid var(--print); opacity: 0.6; }
+.fp-box.on { background: var(--print); opacity: 1; box-shadow: 0 0 8px var(--print); }
+.fp-scramble-bar { width: 120px; height: 6px; background: rgba(143, 211, 255, 0.15); overflow: hidden; }
+.fp-scramble-fill { height: 100%; background: var(--print); transform-origin: left; }
+.fp-scramble-text { min-width: 32px; text-align: right; font-variant-numeric: tabular-nums; }
+.fp-main { display: grid; grid-template-columns: auto 1fr; gap: 16px; align-items: center; }
+.pieces { display: grid; gap: 8px; }
+.pieces canvas { display: block; width: 84px; height: 84px; cursor: pointer; background: #020a11; border: 2px solid rgba(143, 211, 255, 0.2); border-radius: 3px; transition: border-color 0.1s, box-shadow 0.1s; }
+.pieces canvas:hover { border-color: rgba(143, 211, 255, 0.55); }
+.pieces canvas.cursor { border-color: #fff; }
+.pieces canvas.selected { border-color: var(--print); box-shadow: 0 0 0 1px var(--print), 0 0 14px rgba(143, 211, 255, 0.55); background: #06233a; }
+.pieces canvas.cursor.selected { border-color: #fff; }
+.pieces canvas.wrong { border-color: var(--bad); box-shadow: 0 0 12px var(--bad); }
+.scanner { position: relative; justify-self: center; padding: 6px; border: 2px solid rgba(143, 211, 255, 0.35); background: #020a11; overflow: hidden; }
+.scanner canvas { display: block; width: 320px; height: 320px; }
 /* the scan line going up and down */
 .scanner::after {
-    content: ""; position: absolute; left: 0; right: 0; height: 30px; top: 0;
-    background: linear-gradient(transparent, rgba(120, 200, 255, 0.35), transparent); animation: scan 2.6s ease-in-out infinite alternate;
+    content: ""; position: absolute; left: 0; right: 0; height: 36px; top: 0;
+    background: linear-gradient(transparent, rgba(120, 200, 255, 0.3), transparent); animation: scan 2.6s ease-in-out infinite alternate;
 }
-@keyframes scan { to { top: calc(100% - 30px); } }
-.pieces { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
-.pieces canvas { width: 100%; height: auto; cursor: pointer; background: #06121c; border: 2px solid var(--dev-edge); border-radius: 5px; box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.6); }
-.pieces canvas:hover { border-color: rgba(255, 255, 255, 0.5); }
-.pieces canvas.selected { border-color: #8fd3ff; box-shadow: 0 0 0 1px #8fd3ff, 0 0 12px rgba(143, 211, 255, 0.6); }
-.print-side { display: flex; flex-direction: column; gap: 10px; }
-.print-side button { padding: 10px; font: 700 calc(15px * var(--text-scale)) var(--title-font); text-transform: uppercase; letter-spacing: 0.08em; }
-.print-dev .flash { color: #ff8a8a; }
+@keyframes scan { to { top: calc(100% - 36px); } }
+.fp-stamp {
+    position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%) rotate(-8deg); padding: 6px 14px;
+    font: 700 26px var(--title-font); letter-spacing: 0.1em; text-transform: uppercase; white-space: nowrap;
+    color: var(--good); border: 3px solid var(--good); background: rgba(0, 0, 0, 0.6); animation: stamp 0.3s ease-out;
+}
+.fp-bottom { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.fp-bottom .flash { flex: 1; text-align: left; color: #ff8a8a; min-height: 0; }
+.fp-check { padding: 8px 18px; font: 700 calc(15px * var(--text-scale)) var(--title-font); text-transform: uppercase; letter-spacing: 0.08em; }
 
 /* Hotwire: under the steering column: a wiring harness on the left, the ignition terminals on the right */
 .hw-wrap { width: 100%; display: flex; flex-direction: column; gap: 10px; }
@@ -467,6 +492,7 @@ canvas.car { cursor: crosshair; }
     --timer: var(--brand);
     --heat: var(--brand);
     --scan: var(--brand);
+    --print: var(--brand);
     --dev-case: #031007;
     --dev-edge: #1c7a3a;
     --dev-shine: transparent;
@@ -488,7 +514,7 @@ canvas.car { cursor: crosshair; }
 .style-terminal .pin { background: #062d12; border: 1px solid var(--brand); }
 .style-terminal .pin.set { background: var(--brand); }
 .style-terminal .track { background: #010401; border-radius: 0; }
-.style-terminal .scanner, .style-terminal .pieces canvas { background: #010401; }
+.style-terminal .scanner, .style-terminal .pieces canvas, .style-terminal .fp-screen { background: #010401; }
 .style-terminal .meter-fill { background: var(--brand); }
 .style-terminal .key-hole { fill: #031007; }
 .style-terminal .hw-term.ink-dark { text-shadow: 0 0 3px rgba(255, 255, 255, 0.95), 0 0 1px #fff; }

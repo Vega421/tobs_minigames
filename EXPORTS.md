@@ -210,7 +210,7 @@ Scripts written for **qb-minigames**, **memorygame**, **mhacking** or **safecrac
 | `keypad` | `Keypad` | Type the code you saw |
 | `wires` | `Wires` | Cut the wires in the right order |
 | `lockpick` | `Lockpick` | Stop the pick in each sweet spot |
-| `fingerprint` | `Fingerprint` | Pick the 4 pieces of the print |
+| `fingerprint` | `Fingerprint` | Clone prints: pick the 4 pieces of each print, TAB to check |
 | `hotwire` | `Hotwire` | Connect each wire to its colour's name |
 | `lasers` | `Lasers` | Cross the room without touching a laser |
 | `keyfiling` | `KeyFiling` | File each cut down to its line |
@@ -228,7 +228,7 @@ Scripts written for **qb-minigames**, **memorygame**, **mhacking** or **safecrac
 | `keypad` | `length`, `show` (ms, `0` = not shown), `time` (s), `attempts`, `code` (a code the player already knows) |
 | `wires` | `wires`, `cuts`, `time` (s), `labels` |
 | `lockpick` | `pins`, `zone`, `speed`, `lives`, `time` (s, optional) |
-| `fingerprint` | `decoys`, `time` (s), `lives` |
+| `fingerprint` | `prints`, `decoys`, `time` (s, for all prints), `lives`, `scramble` (s, `0` = off) |
 | `hotwire` | `wires`, `tricky`, `mistakes`, `time` (s) |
 | `lasers` | `walls`, `sweepers`, `speed`, `gap`, `move`, `lives`, `time` (s) |
 | `keyfiling` | `cuts`, `tolerance`, `speed`, `lives`, `time` (s) |
