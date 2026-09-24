@@ -131,12 +131,15 @@
   }
 
   // MG.Theme from config.lua: colours for the CSS variables in style.css
-  const THEME_VARS = { accent: '--brand', background: '--bg', text: '--text', muted: '--muted', good: '--good', bad: '--bad', gold: '--gold' };
+  // accent also colours the timer bar, which is white in the default look
+  const THEME_VARS = { accent: ['--brand', '--timer'], background: ['--bg'], text: ['--text'], muted: ['--muted'], good: ['--good'], bad: ['--bad'], gold: ['--gold'] };
   function applyTheme(theme) {
     const root = document.documentElement.style;
-    for (const [key, cssVar] of Object.entries(THEME_VARS)) {
-      if (theme && typeof theme[key] === 'string' && theme[key] !== '') root.setProperty(cssVar, theme[key]);
-      else root.removeProperty(cssVar);
+    for (const [key, cssVars] of Object.entries(THEME_VARS)) {
+      for (const cssVar of cssVars) {
+        if (theme && typeof theme[key] === 'string' && theme[key] !== '') root.setProperty(cssVar, theme[key]);
+        else root.removeProperty(cssVar);
+      }
     }
   }
 
@@ -269,6 +272,22 @@
 
   const Games = {};
 
+  // A device's case: screws in the corners, then the parts inside
+  function device(cls, ...parts) {
+    const d = el('div', `device ${cls}`);
+    for (let i = 0; i < 4; i++) d.append(el('span', 'screw'));
+    d.append(...parts);
+    return d;
+  }
+  // The model plate and two lights at the top of a device
+  function deviceTop(model) {
+    const top = el('div', 'dev-top');
+    const leds = el('div', 'leds');
+    leds.append(el('span', 'led red'), el('span', 'led green'));
+    top.append(el('span', 'kp-model', model), leds);
+    return top;
+  }
+
   // KEYPAD: remember the code, then type it
   Games.keypad = function (g) {
     const o = g.o;
@@ -278,11 +297,19 @@
     let attempts = o.attempts || 1;
     let input = '';
     let entering = false;
-    const box = el('div', 'keypad');
+    // a wall keypad: model plate and two lights, an LCD, then the keys
+    const box = el('div', 'keypad device');
+    const top = el('div', 'kp-top');
+    const leds = el('div', 'leds');
+    leds.append(el('span', 'led red'), el('span', 'led green'));
+    top.append(el('span', 'kp-model', 'KP-500'), leds);
+    const screen = el('div', 'screen');
     const shown = el('div', 'code', showMs > 0 ? code : '');
+    screen.append(shown);
     const flash = el('div', 'flash');
     const keys = el('div', 'keys');
-    box.append(shown, flash, keys);
+    for (let i = 0; i < 4; i++) box.append(el('span', 'screw'));
+    box.append(top, screen, flash, keys);
     $('mg-body').append(box);
     setText($('mg-hint'), g.t.keypad_memorize);
 
@@ -293,7 +320,9 @@
       if (k === 'clear') input = '';
       else if (k === 'back') input = input.slice(0, -1);
       else if (k === 'enter') {
-        if (M.keypadCheck(code, input)) return finish(true);
+        if (M.keypadCheck(code, input)) { box.classList.add('ok'); return finish(true); }
+        box.classList.remove('err'); void box.offsetWidth; box.classList.add('err');
+        setTimeout(() => box.classList.remove('err'), 700);
         attempts -= 1;
         counter(g.t.attempts, attempts);
         if (attempts <= 0) return finish(false, g.t.keypad_wrong);
@@ -303,17 +332,28 @@
       } else if (input.length < code.length) input += k;
       showInput();
     };
+    const LETTERS = { 2: 'ABC', 3: 'DEF', 4: 'GHI', 5: 'JKL', 6: 'MNO', 7: 'PQRS', 8: 'TUV', 9: 'WXYZ' };
+    const keyEls = {};
     ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'clear', '0', 'enter'].forEach((k) => {
-      const b = el('button', k === 'enter' ? 'enter' : '', k === 'clear' ? g.t.clear : k === 'enter' ? g.t.enter : k);
+      const b = el('button', k === 'enter' || k === 'clear' ? k : '', k === 'clear' ? g.t.clear : k === 'enter' ? g.t.enter : k);
+      if (/^[0-9]$/.test(k)) b.append(el('small', '', LETTERS[k] || '\u00a0'));
       b.onclick = () => press(k);
+      keyEls[k] = b;
       keys.append(b);
     });
+    // typing on the keyboard presses the key on screen too
+    const flick = (k) => {
+      const b = keyEls[k];
+      if (!b) return;
+      b.classList.add('pressed');
+      setTimeout(() => b.classList.remove('pressed'), 90);
+    };
     keys.style.visibility = 'hidden';
     if (showMs > 0) startTimer(showMs / 1000, false);
     g.onKey = (e) => {
-      if (/^[0-9]$/.test(e.key)) press(e.key);
+      if (/^[0-9]$/.test(e.key)) { flick(e.key); press(e.key); }
       else if (e.key === 'Backspace') press('back');
-      else if (e.key === 'Enter') press('enter');
+      else if (e.key === 'Enter') { flick('enter'); press('enter'); }
     };
     const enter = () => {
       if (g.ended || game !== g) return;
@@ -359,7 +399,9 @@
       grid.append(c);
       return c;
     });
-    $('mg-body').append(grid);
+    const screen = el('div', 'screen');
+    screen.append(grid);
+    $('mg-body').append(device('thermite-dev', deviceTop('TX-3'), screen));
     setText($('mg-hint'), g.t.thermite_memorize);
     startTimer((o.show || 2500) / 1000, false);
     setTimeout(() => {
@@ -378,7 +420,11 @@
     const puzzle = M.makeWires(g.rand, o.wires || 5, o.cuts || 3);
     let done = 0;
     const wrap = el('div', 'wires');
+    // a junction box: screws, a hazard stripe, and the wires inside
     const wireBox = el('div', 'wire-box');
+    for (let i = 0; i < 4; i++) wireBox.append(el('span', 'screw'));
+    const inside = el('div', 'wire-inside');
+    wireBox.append(inside);
     const clues = el('ol', 'clues');
     const clueText = (c) => {
       if (c.kind === 'color') return fmt(g.t.clue_color, g.t[c.color]);
@@ -407,7 +453,7 @@
         sound('good');
         items[done].className = 'current';
       };
-      wireBox.append(w);
+      inside.append(w);
     });
     wrap.append(wireBox, clues);
     $('mg-body').append(wrap);
@@ -432,7 +478,9 @@
     const pick = el('div', 'pick');
     const flash = el('div', 'flash');
     track.append(zoneEl, pick);
-    box.append(pinRow, track, flash);
+    const cylinder = el('div', 'cylinder');
+    cylinder.append(pinRow);
+    box.append(device('lock-dev', cylinder, track), flash);
     $('mg-body').append(box);
     setText($('mg-hint'), g.t.lockpick_hint);
     counter(g.t.lives, lives);
@@ -501,9 +549,11 @@
     const target = el('canvas');
     target.width = target.height = 220;
     drawPrint(target, print.seed);
+    const scanner = el('div', 'screen scanner');
+    scanner.append(target);
     const check = el('button', '', g.t.check);
     const flash = el('div', 'flash');
-    side.append(target, check, flash);
+    side.append(scanner, check, flash);
     const grid = el('div', 'pieces');
     const tiles = print.pieces.map((p, i) => {
       const c = el('canvas');
@@ -532,7 +582,7 @@
       tiles.forEach((t) => t.classList.remove('selected'));
     };
     wrap.append(side, grid);
-    $('mg-body').append(wrap);
+    $('mg-body').append(device('print-dev', wrap));
     setText($('mg-hint'), g.t.fingerprint_hint);
     counter(g.t.lives, lives);
     startTimer(o.time || 25);
@@ -613,6 +663,15 @@
     startTimer(o.time || 16);
   };
 
+  // A tablet around a game's screen
+  function tablet(...parts) {
+    const t = el('div', 'tablet');
+    const body = el('div', 'tablet-body');
+    body.append(...parts);
+    t.append(body);
+    return t;
+  }
+
   // LASER GRID: cross the room without touching a laser
   const MOVE_KEYS = { KeyW: 'up', ArrowUp: 'up', KeyS: 'down', ArrowDown: 'down', KeyA: 'left', ArrowLeft: 'left', KeyD: 'right', ArrowRight: 'right' };
   Games.lasers = function (g) {
@@ -623,7 +682,7 @@
     canvas.width = W; canvas.height = H;
     const flash = el('div', 'flash');
     const wrap = el('div', 'room-wrap');
-    wrap.append(canvas, flash);
+    wrap.append(tablet(canvas), flash);
     $('mg-body').append(wrap);
     const ctx = canvas.getContext('2d');
     let p = { ...M.LASER_START }, lives = o.lives || 1, safeUntil = 0;
@@ -678,7 +737,7 @@
       if (!blinking) {
         ctx.fillStyle = cssColor('--text') || '#fff';
         ctx.beginPath(); ctx.arc(p.x * S, p.y * S, M.PLAYER_R * S, 0, Math.PI * 2); ctx.fill();
-        ctx.strokeStyle = cssColor('--brand') || '#ff6b2c';
+        ctx.strokeStyle = cssColor('--scan') || '#8fd3ff';
         ctx.lineWidth = 2;
         ctx.stroke();
       }
@@ -736,7 +795,14 @@
     const xEnd = x0 + n * cw + 10, W = xEnd + 40;
     const depthY = (d) => y0 + d * reach;
     const svg = svgEl('svg', { viewBox: `0 0 ${W} 200`, class: 'key-svg' });
-    // the bow: a ring with a hole, and the shoulder
+    // the vice's jaws holding the bow, then the bow: a ring with a hole, and the shoulder
+    const defs = svgEl('defs');
+    const grad = svgEl('linearGradient', { id: 'vice-metal', x1: 0, y1: 0, x2: 0, y2: 1 });
+    grad.append(svgEl('stop', { offset: 0, 'stop-color': '#8a9099' }), svgEl('stop', { offset: 1, 'stop-color': '#3b3f46' }));
+    defs.append(grad);
+    svg.append(defs);
+    svg.append(svgEl('rect', { x: 22, y: 14, width: 96, height: 32, rx: 3, class: 'vice' }));
+    svg.append(svgEl('rect', { x: 22, y: 160, width: 96, height: 32, rx: 3, class: 'vice' }));
     svg.append(svgEl('circle', { cx: 70, cy: 103, r: 58, class: 'key-metal' }));
     svg.append(svgEl('circle', { cx: 60, cy: 103, r: 18, class: 'key-hole' }));
     svg.append(svgEl('rect', { x: 118, y: 72, width: 40, height: 62, rx: 6, class: 'key-metal' }));
@@ -759,7 +825,9 @@
     svg.append(filings);
     const box = el('div', 'key-wrap');
     const flash = el('div', 'flash');
-    box.append(svg, flash);
+    const bench = el('div', 'bench');
+    bench.append(svg);
+    box.append(bench, flash);
     $('mg-body').append(box);
 
     const draw = () => {
@@ -831,7 +899,7 @@
     meter.append(fill, label);
     const flash = el('div', 'flash');
     const wrap = el('div', 'room-wrap');
-    wrap.append(canvas, meter, flash);
+    wrap.append(tablet(canvas, meter), flash);
     $('mg-body').append(wrap);
     const ctx = canvas.getContext('2d');
     let lives = o.lives || 1, scan = null, lastBeep = 0;
@@ -877,7 +945,7 @@
         const s = M.signal(scan, puzzle);
         const pulse = Math.max(0, 1 - (now - lastBeep) / 300);
         const cx = scan.x * S, cy = scan.y * S, R = 42;
-        const brand = cssColor('--brand');
+        const brand = cssColor('--scan') || '#8fd3ff';
         // radar: a sweeping wedge that fades behind the line, turning faster on a strong signal
         const angle = (now / 1000) * (2 + s * 5);
         for (let k = 0; k < 14; k++) {

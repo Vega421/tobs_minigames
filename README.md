@@ -85,7 +85,7 @@ Every export, setting, event and command is in **[EXPORTS.md](EXPORTS.md)**, inc
 
 | Style | Look |
 | ----- | ---- |
-| `"default"` | A dark panel with an orange accent |
+| `"default"` | GTA Online's white titles, key bar and "passed / failed" screen, with each game on a real-looking device (a wall keypad, a junction box, a lock, a tablet, a key in a vice) |
 | `"terminal"` | A green hacker terminal with scanlines and a glow |
 | `"glass"` | A frosted glass panel over the game |
 
@@ -130,4 +130,5 @@ Made by Vega. GPL-3.0.
 - Hacking laptop method names: [TransitNode/Hacking_PC](https://github.com/TransitNode/Hacking_PC) and draobrehtom's HackingGame gist (names only)
 - Safe dial sprite names: [TimothyDexter/FiveM-SafeCrackingMinigame](https://github.com/TimothyDexter/FiveM-SafeCrackingMinigame) (names only)
 - Sound, animation, scenario and prop names checked in [DurtyFree/gta-v-data-dumps](https://github.com/DurtyFree/gta-v-data-dumps)
+- Title font: [Oswald](https://github.com/googlefonts/OswaldFont) (SIL Open Font License 1.1, `web/fonts/OFL.txt`)
 - Drop-ins match the exports and events of [qb-minigames](https://github.com/qbcore-fivem/qb-minigames) (GPL-3.0), [safecracker](https://github.com/qbcore-fivem/safecracker), memorygame and mhacking (names only, no code copied)

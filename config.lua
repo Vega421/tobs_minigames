@@ -26,12 +26,12 @@ MG.Animations = {
     wires = "repair", hotwire = "hotwire", lockpick = "kneel", keyfiling = "kneel",
 }
 
--- Look of the web minigames: "default" (dark panel, orange), "terminal" (green hacker terminal with
--- scanlines) or "glass" (frosted glass over the game)
+-- Look of the web minigames: "default" (GTA Online's titles and key bar, each game on a real-looking
+-- device), "terminal" (green hacker terminal with scanlines) or "glass" (frosted glass over the game)
 MG.Style = "default"
 
 -- Your own colours, on top of the style's (any CSS colour). Leave a colour out to keep the style's.
--- accent: top line, timer, buttons, lit squares; background: the panel; text; muted: hints and
+-- accent: the timer and thin accent lines; background: the panel; text; muted: hints and
 -- counters; good: right answers; bad: mistakes and lasers; gold: the lockpick's sweet spot
 -- Example: MG.Theme = {accent = "#3e7bfa", gold = "#b58cff"}
 MG.Theme = {}
