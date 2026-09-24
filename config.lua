@@ -27,7 +27,7 @@ MG.Animations = {
 }
 
 -- Look of the web minigames: "default" (GTA Online's titles and key bar, each game on a real-looking
--- device), "terminal" (green hacker terminal with scanlines) or "glass" (frosted glass over the game)
+-- device, no dark window behind it), "terminal" (green hacker terminal with scanlines) or "glass" (frosted glass over the game)
 MG.Style = "default"
 
 -- Your own colours, on top of the style's (any CSS colour). Leave a colour out to keep the style's.

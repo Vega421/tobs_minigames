@@ -85,7 +85,7 @@ Every export, setting, event and command is in **[EXPORTS.md](EXPORTS.md)**, inc
 
 | Style | Look |
 | ----- | ---- |
-| `"default"` | GTA Online's white titles, key bar and "passed / failed" screen, with each game on a real-looking device (a wall keypad, a junction box, a lock, a tablet, a key in a vice) |
+| `"default"` | GTA Online's white titles, key bar and "passed / failed" screen, with each game on a real-looking device (a wall keypad, a junction box, a lock, a tablet, a key in a vice), with no dark window behind them |
 | `"terminal"` | A green hacker terminal with scanlines and a glow |
 | `"glass"` | A frosted glass panel over the game |
 
