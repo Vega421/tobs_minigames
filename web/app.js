@@ -518,97 +518,104 @@
     if (o.time) startTimer(o.time);
   };
 
-  // FINGERPRINT: pick the 4 pieces of the print shown
-  function drawPrint(canvas, seed, part) {
+  // FINGERPRINT: a tall print, cut into 4 bands (top to bottom). drawPrint draws the whole print, or
+  // one band of it (band 0-3) stretched over the canvas.
+  const PRINT_W = 240, PRINT_H = 400;
+  function drawPrint(canvas, seed, band) {
     const ctx = canvas.getContext('2d');
-    const size = canvas.width;
-    ctx.clearRect(0, 0, size, size);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.save();
-    if (part !== undefined) {
-      ctx.scale(2, 2);
-      ctx.translate(-(part % 2) * size / 2, -Math.floor(part / 2) * size / 2);
-    }
-    ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--print').trim() || '#8fd3ff';
-    ctx.lineWidth = part !== undefined ? 1.3 : 1.8;
+    if (band !== undefined) {
+      ctx.scale(canvas.width / PRINT_W, canvas.height / (PRINT_H / 4));
+      ctx.translate(0, -band * PRINT_H / 4);
+    } else ctx.scale(canvas.width / PRINT_W, canvas.height / PRINT_H);
+    ctx.strokeStyle = cssColor('--print') || '#dff4ff';
+    ctx.lineWidth = 2.2;
     ctx.lineCap = 'round';
+    ctx.shadowColor = ctx.strokeStyle;
+    ctx.shadowBlur = 4;
     for (const line of M.ridges(seed)) {
       ctx.beginPath();
-      line.forEach((p, i) => (i === 0 ? ctx.moveTo(p.x * size, p.y * size) : ctx.lineTo(p.x * size, p.y * size)));
+      line.forEach((p, k) => (k === 0 ? ctx.moveTo(p.x * PRINT_W, p.y * PRINT_H) : ctx.lineTo(p.x * PRINT_W, p.y * PRINT_H)));
       ctx.stroke();
     }
     ctx.restore();
   }
 
-  // Like the Casino heist's clone hack: pick the 4 pieces of the print on the right with the arrow keys
-  // (or the mouse), check with TAB. Several prints in a row (`prints`), a scramble timer that shuffles
-  // the pieces (`scramble`), and a wrong check costs an attempt (`lives`).
+  // Like the Casino heist's fingerprint cloner: a digital timer and lives on top, 8 components in two
+  // columns (dim until picked), the print on the right cut into 4 bands, a processing bar on each
+  // check, the prints to clone and a segmented scramble bar at the bottom. Arrow keys / WASD and SPACE
+  // (or the mouse) pick, TAB checks.
   Games.fingerprint = function (g) {
     const o = g.o;
     const total = Math.max(1, o.prints || 1);
     const scrambleSecs = Number(o.scramble) || 0;
-    let lives = o.lives || 1;
+    const maxLives = o.lives || 1;
+    let lives = maxLives;
     let done = 0, cursor = 0, busy = false;
     let print, pieces, selected, scrambleAt;
 
-    const screen = el('div', 'screen fp-screen');
-    // the top line: prints cloned so far, and the scramble countdown
+    const screen = el('div', 'fp-screen');
+    // top: the timer as big digits, and the lives
     const top = el('div', 'fp-top');
-    const prints = el('div', 'fp-prints');
-    prints.append(el('span', 'fp-label', g.t.fp_prints));
-    const boxes = [...Array(total)].map(() => { const b = el('span', 'fp-box'); prints.append(b); return b; });
-    const scr = el('div', 'fp-scramble');
-    const scrBar = el('div', 'fp-scramble-bar');
-    const scrFill = el('div', 'fp-scramble-fill');
-    scrBar.append(scrFill);
-    const scrText = el('span', 'fp-scramble-text');
-    scr.append(el('span', 'fp-label', g.t.fp_scramble), scrBar, scrText);
-    if (!scrambleSecs) scr.classList.add('hidden');
-    top.append(prints, scr);
-
+    const clock = el('div', 'fp-clock', '00:00:00');
+    const lifeRow = el('div', 'fp-lives');
+    const lifeEls = [...Array(maxLives)].map(() => { const l = el('span', 'fp-life'); lifeRow.append(l); return l; });
+    top.append(clock, lifeRow);
+    // middle: the components and the print
     const main = el('div', 'fp-main');
-    const grid = el('div', 'pieces');
-    const scanner = el('div', 'scanner');
+    const grid = el('div', 'fp-comps');
+    const printBox = el('div', 'fp-print');
     const target = el('canvas');
-    target.width = target.height = 320;
-    const stamp = el('div', 'fp-stamp hidden', g.t.fp_cloned);
-    scanner.append(target, stamp);
-    main.append(grid, scanner);
-    screen.append(top, main);
-
+    target.width = PRINT_W; target.height = PRINT_H;
+    printBox.append(target);
+    for (let b = 1; b < 4; b++) { const d = el('span', 'fp-cut'); d.style.top = `${b * 25}%`; printBox.append(d); }
+    // the window over the print while a check runs: a processing bar, then the answer
+    const win = el('div', 'fp-window hidden');
+    const winBar = el('div', 'fp-window-bar');
+    const winSegs = [...Array(12)].map(() => { const sg = el('span'); winBar.append(sg); return sg; });
+    const winText = el('div', 'fp-window-text');
+    win.append(winBar, winText);
+    printBox.append(win);
+    main.append(grid, printBox);
+    // bottom: the prints to clone, and the scramble bar
     const bottom = el('div', 'fp-bottom');
-    const check = el('button', 'fp-check');
-    setText(check, `[TAB] ${g.t.check}`);
+    const prints = el('div', 'fp-prints');
+    const printEls = [...Array(total)].map((_, k) => { const b = el('span', 'fp-slot', String(k + 1)); prints.append(b); return b; });
+    const scr = el('div', 'fp-scramble');
+    const scrSegs = [...Array(20)].map(() => { const sg = el('span'); scr.append(sg); return sg; });
+    if (!scrambleSecs) scr.classList.add('hidden');
+    bottom.append(prints, scr);
+    screen.append(top, main, bottom);
     const flash = el('div', 'flash');
-    bottom.append(flash, check);
-    $('mg-body').append(device('print-dev', screen, bottom));
+    $('mg-body').append(screen, flash);
 
     let tiles = [];
     const render = () => {
       grid.textContent = '';
-      const cols = M.fpColumns(pieces.length);
-      grid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
-      tiles = pieces.map((p, i) => {
-        const c = p.canvas;
-        c.classList.toggle('selected', selected.includes(p));
-        c.classList.toggle('cursor', i === cursor);
-        c.classList.remove('wrong');
-        c.onclick = () => { cursor = i; toggle(); };
+      grid.style.gridTemplateColumns = `repeat(${M.fpColumns(pieces.length)}, auto)`;
+      tiles = pieces.map((p, k) => {
+        const c = p.tile;
+        c.className = 'fp-comp' + (selected.includes(p) ? ' selected' : '') + (k === cursor ? ' cursor' : '');
+        c.onclick = () => { cursor = k; toggle(); };
         grid.append(c);
         return c;
       });
+      printEls.forEach((e, k) => { e.className = 'fp-slot' + (k < done ? ' done' : k === done ? ' current' : ''); });
     };
     const newPrint = () => {
       print = M.makeFingerprint(g.rand, o.decoys ?? 4);
       pieces = print.pieces.map((p) => {
+        const tile = el('div', 'fp-comp');
         const c = el('canvas');
-        c.width = c.height = 120;
+        c.width = PRINT_W; c.height = PRINT_H / 4;
         drawPrint(c, p.seed, p.part);
-        return Object.assign({}, p, { canvas: c });
+        tile.append(c);
+        return Object.assign({}, p, { tile });
       });
       selected = [];
       cursor = 0;
       drawPrint(target, print.seed);
-      stamp.classList.add('hidden');
       scrambleAt = scrambleSecs ? performance.now() + scrambleSecs * 1000 : null;
       render();
     };
@@ -621,46 +628,66 @@
       sound('click');
       render();
     };
+    // a check: the processing bar fills, then the answer shows for a moment
     const tryCheck = () => {
       if (g.ended || busy) return;
       if (selected.length !== 4) return sound('bad'); // 4 pieces first
       const picked = selected.map((p) => pieces.indexOf(p));
-      if (M.fingerprintCheck(pieces, picked)) {
-        boxes[done].classList.add('on');
-        done += 1;
-        flash.textContent = '';
-        if (done >= total) return finish(true);
-        // the stamp on the print, then the next one
-        busy = true;
-        stamp.classList.remove('hidden');
-        sound('good');
-        setTimeout(() => { if (g.ended || game !== g) return; busy = false; newPrint(); }, 900);
-        return;
-      }
-      lives -= 1;
-      counter(g.t.lives, Math.max(0, lives));
-      tiles.forEach((t, i) => { if (picked.includes(i)) t.classList.add('wrong'); });
-      if (lives <= 0) return finish(false, g.t.no_match);
-      sound('bad');
-      flash.textContent = g.t.no_match;
-      selected = [];
-      setTimeout(() => { if (!g.ended && game === g) render(); }, 450);
+      const right = M.fingerprintCheck(pieces, picked);
+      busy = true;
+      flash.textContent = '';
+      win.className = 'fp-window';
+      winText.textContent = '';
+      winSegs.forEach((sg) => sg.classList.remove('on'));
+      winSegs.forEach((sg, k) => setTimeout(() => { if (game === g) { sg.classList.add('on'); post('sound', { name: 'move' }); } }, 60 * k));
+      setTimeout(() => {
+        if (g.ended || game !== g) return;
+        win.className = `fp-window ${right ? 'good' : 'bad'}`;
+        winText.textContent = right ? g.t.fp_cloned : g.t.no_match;
+        if (right) {
+          done += 1;
+          render();
+          if (done >= total) return finish(true);
+          sound('good');
+          setTimeout(() => { if (g.ended || game !== g) return; win.className = 'fp-window hidden'; busy = false; newPrint(); }, 800);
+          return;
+        }
+        lives -= 1;
+        lifeEls.forEach((l, k) => l.classList.toggle('lost', k >= lives));
+        tiles.forEach((t, k) => { if (picked.includes(k)) t.classList.add('wrong'); });
+        if (lives <= 0) return finish(false, g.t.no_match);
+        sound('bad');
+        setTimeout(() => {
+          if (g.ended || game !== g) return;
+          win.className = 'fp-window hidden';
+          busy = false;
+          selected = [];
+          render();
+        }, 800);
+      }, 60 * winSegs.length + 150);
     };
-    check.onclick = tryCheck;
     const DIRS = { ArrowUp: 'up', KeyW: 'up', ArrowDown: 'down', KeyS: 'down', ArrowLeft: 'left', KeyA: 'left', ArrowRight: 'right', KeyD: 'right' };
     g.onKey = (e) => {
       if (DIRS[e.code]) {
         e.preventDefault();
         const next = M.fpMove(cursor, DIRS[e.code], pieces.length, M.fpColumns(pieces.length));
-        if (next !== cursor) { cursor = next; sound('move'); render(); }
+        if (next !== cursor && !busy) { cursor = next; sound('move'); render(); }
       } else if (e.code === 'Space' || e.code === 'Enter') { e.preventDefault(); toggle(); }
       else if (e.code === 'Tab') { e.preventDefault(); tryCheck(); }
     };
+    const pad = (n) => String(n).padStart(2, '0');
     g.frame = (now) => {
+      // the clock: minutes, seconds, hundredths
+      if (game.timerEnd) {
+        const left = Math.min(game.timerLength, Math.max(0, game.timerEnd - now));
+        clock.textContent = `${pad(Math.floor(left / 60000))}:${pad(Math.floor(left / 1000) % 60)}:${pad(Math.floor(left / 10) % 100)}`;
+      }
+      // the print flickers while it's scanned
+      target.style.opacity = busy ? 1 : String(0.7 + Math.random() * 0.3);
       if (!scrambleAt || busy) return;
       const left = scrambleAt - now;
-      scrFill.style.transform = `scaleX(${Math.max(0, left / (scrambleSecs * 1000))})`;
-      scrText.textContent = `${Math.max(0, Math.ceil(left / 1000))} s`;
+      const lit = Math.ceil((Math.max(0, left) / (scrambleSecs * 1000)) * scrSegs.length);
+      scrSegs.forEach((sg, k) => sg.classList.toggle('on', k < lit));
       if (left <= 0) {
         const at = pieces[cursor];
         pieces = M.fpScramble(g.rand, pieces);
@@ -674,7 +701,6 @@
     };
     newPrint();
     setText($('mg-hint'), g.t.fingerprint_hint);
-    counter(g.t.lives, lives);
     startTimer(o.time || 40);
   };
 

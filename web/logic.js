@@ -102,7 +102,7 @@
   };
   L.inZone = (pos, center, zone) => Math.abs(pos - center) <= zone / 2;
 
-  // FINGERPRINT: pick the 4 pieces (0 top left, 1 top right, 2 bottom left, 3 bottom right) of
+  // FINGERPRINT: pick the 4 pieces (bands 0-3, top to bottom) of
   // the print shown; decoys are pieces of other prints
 
   L.makeFingerprint = function (rand, decoys) {
