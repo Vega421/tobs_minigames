@@ -4,9 +4,12 @@
 -- Method names and click results were looked up in TransitNode/Hacking_PC and draobrehtom's
 -- HackingGame gist (neither has a license, so no code was copied from them).
 --
--- MGHack.Start(o) blocks until done and returns true (hacked), false (out of lives, out of time,
--- powered off, stopped or died), or nil if the laptop screen didn't load. o = the settings from
+-- MGHack.Start(o, intro) blocks until done and returns true (hacked), false (out of lives, out of
+-- time, powered off, stopped or died), or nil if the laptop screen didn't load. o = the settings from
 -- MG.Hack (see config.lua): lives, ipConnect, timeLimit, background, columnSpeed, words.
+-- intro: shows the "how to play" card once the laptop has loaded; false from it = gave up.
+-- On screen, like GTA Online: the key bar at the bottom right, the title and time left at the top
+-- (client/gtaui.lua).
 
 MGHack = {}
 
@@ -47,18 +50,6 @@ end
 
 local function Sound(name) PlaySoundFrontend(-1, name, "", true) end
 
--- White text at the top centre of the screen
-local function DrawTop(text, y)
-    SetTextFont(4)
-    SetTextScale(0.45, 0.45)
-    SetTextColour(255, 255, 255, 220)
-    SetTextCentre(true)
-    SetTextOutline()
-    BeginTextCommandDisplayText("STRING")
-    AddTextComponentSubstringPlayerName(text)
-    EndTextCommandDisplayText(0.5, y)
-end
-
 function MGHack.Word(o)
     if type(o.words) == "table" and #o.words > 0 then return o.words[math.random(#o.words)] end
     local w = ""
@@ -77,7 +68,7 @@ local function Setup(sf, o, t)
 end
 
 -- Handles one click result. Returns true / false when the hack is over, nil to keep going.
--- g = {app = nil | "ip" | "word", ipDone, lives, note, noteUntil}
+-- g = {app = nil | "ip" | "word", ipDone, lives, msg = {} (the message at the top)}
 function MGHack.Handle(sf, g, id, o, t)
     local R = MGHack.Result
     if id == R.POWER_OFF then
@@ -88,7 +79,7 @@ function MGHack.Handle(sf, g, id, o, t)
     elseif id == R.BRUTEFORCE and not g.app then
         if o.ipConnect and not g.ipDone then
             Sound("HACKING_CLICK_BAD")
-            g.note, g.noteUntil = t.ip_first, GetGameTimer() + 3000
+            MGHud.Say(g.msg, t.ip_first, 3000)
             return nil
         end
         Call(sf, "SET_LIVES", g.lives, math.floor(o.lives))
@@ -121,7 +112,17 @@ function MGHack.Handle(sf, g, id, o, t)
     return nil
 end
 
-function MGHack.Start(o)
+-- The key bar: select (left click, or ENTER inside a program), back, the arrow keys and ESC
+local function Buttons()
+    return MGButtons.Load({
+        {control = 200, label = ML("btn_stop")},
+        {control = 172, label = ML("btn_move")},
+        {control = 25, label = ML("btn_back")},
+        {control = 24, label = ML("btn_select")},
+    })
+end
+
+function MGHack.Start(o, intro)
     if MGHack.active then return false end
     local t = Text[MG.Locale] or Text.en
 
@@ -133,9 +134,16 @@ function MGHack.Start(o)
         waited = waited + 10
     end
 
+    if intro and not intro() then
+        SetScaleformMovieAsNoLongerNeeded(sf)
+        return false
+    end
+
     MGHack.active = true
     Setup(sf, o, t)
-    local g = {lives = math.floor(o.lives)}
+    local buttons = Buttons()
+    local title = ML("title_hack")
+    local g = {lives = math.floor(o.lives), msg = {}}
     local ped, started = PlayerPedId(), GetGameTimer()
     local pending, result, shownUntil
 
@@ -170,14 +178,15 @@ function MGHack.Start(o)
                     -- let the win / lose message show for a moment
                     if result ~= nil and g.app == "word" then shownUntil = GetGameTimer() + 2500 end
                 end
-                DrawTop(string.format(t.time, math.ceil(left)), 0.03)
-                if g.note and GetGameTimer() < g.noteUntil then DrawTop(g.note, 0.07) end
+                MGHud.Draw(title, string.format(t.time, math.ceil(left)), g.msg)
+                MGButtons.Draw(buttons)
             end
         end
         Citizen.Wait(0)
     end
 
     SetScaleformMovieAsNoLongerNeeded(sf)
+    MGButtons.Release(buttons)
     MGHack.active = false
     return result
 end

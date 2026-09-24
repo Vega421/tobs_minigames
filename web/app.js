@@ -102,6 +102,7 @@
   // ESC: failed, and the test menu's "Play all" stops
   function giveUp() {
     if (!game || game.ended) return;
+    if (game.introOnly) return endIntro(false);
     game.gaveUp = true;
     finish(false);
   }
@@ -164,6 +165,7 @@
 
   function startGame() {
     if (!game || game.started || game.ended) return;
+    if (game.introOnly) return endIntro(true);
     game.started = true;
     clearInterval(game.introTimer);
     $('mg-intro').classList.add('hidden');
@@ -212,6 +214,46 @@
     requestAnimationFrame(loop);
   }
   $('mg-intro').addEventListener('click', startGame);
+
+  // The card alone, before one of GTA's own screens (drill, hack, safe): the game itself isn't on this
+  // page. SPACE, a click or the countdown answers "start"; ESC answers "gave up".
+  function openIntro(data) {
+    const t = data.text;
+    applyStyle(data.style);
+    applyTheme(data.theme);
+    applyUi(data.ui);
+    game = { name: data.game, o: {}, t, ended: false, introOnly: true };
+    const panel = document.querySelector('#mg .panel');
+    panel.className = `panel game-${data.game} intro`;
+    $('mg-title').textContent = t['title_' + data.game] || data.game;
+    setText($('mg-hint'), '');
+    setText($('mg-giveup'), t.give_up);
+    $('mg-result').className = 'hidden';
+    $('mg-body').innerHTML = '';
+    status('');
+    stopTimer();
+    $('mg-intro-title').textContent = t['title_' + data.game] || data.game;
+    setText($('mg-intro-howto'), t['howto_' + data.game] || '');
+    setText($('mg-intro-start'), t.start);
+    let left = Math.max(1, Math.ceil(Number(data.ui && data.ui.intro) || 1));
+    $('mg-intro-count').textContent = fmt(t.starts_in, left);
+    $('mg-intro').classList.remove('hidden');
+    $('mg').classList.remove('hidden', 'leaving');
+    game.introTimer = setInterval(() => {
+      left -= 1;
+      if (left <= 0) return endIntro(true);
+      $('mg-intro-count').textContent = fmt(t.starts_in, left);
+    }, 1000);
+    applyScale();
+  }
+
+  function endIntro(start) {
+    if (!game || !game.introOnly || game.ended) return;
+    game.ended = true;
+    clearInterval(game.introTimer);
+    post('introDone', { start });
+    close();
+  }
 
   function close() {
     if (game) clearInterval(game.introTimer);
@@ -974,6 +1016,7 @@
   window.addEventListener('message', (e) => {
     const d = e.data || {};
     if (d.action === 'open' && Games[d.game]) { closeMenu(); open(d); }
+    else if (d.action === 'intro') { closeMenu(); openIntro(d); }
     else if (d.action === 'close') close();
     else if (d.action === 'menu') openMenu(d);
     else if (d.action === 'menu_close') closeMenu();

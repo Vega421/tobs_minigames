@@ -9,22 +9,16 @@
 -- When the dial reaches the number a tumbler clicks (sound and controller buzz); turn back while it's
 -- still on that number to lock it in. Turning back anywhere else costs a life.
 --
--- MGSafe.Start(o) blocks until done and returns true (open), false (out of lives or time, stopped,
--- died) or nil (the dial's textures didn't load). o = the settings from MG.Safe (see config.lua).
+-- MGSafe.Start(o, intro) blocks until done and returns true (open), false (out of lives or time,
+-- stopped, died) or nil (the dial's textures didn't load). o = the settings from MG.Safe (see
+-- config.lua). intro: shows the "how to play" card once the dial has loaded; false from it = gave up.
+-- On screen, like GTA Online: the key bar at the bottom right, the title with lives and time at the
+-- top, and a message on each click, locked number and wrong turn (client/gtaui.lua).
 
 MGSafe = {}
 
 local Dict, SoundSet = "MPSafeCracking", "SAFE_CRACK_SOUNDSET"
 local Anims = "mini@safe_cracking"
-
-local Help = {
-    en = "~INPUT_MOVE_LEFT_ONLY~ ~INPUT_MOVE_RIGHT_ONLY~ Turn the dial~n~~INPUT_SPRINT~ Turn slowly~n~Turn back when it clicks~n~~INPUT_CELLPHONE_CANCEL~ Stop",
-    da = "~INPUT_MOVE_LEFT_ONLY~ ~INPUT_MOVE_RIGHT_ONLY~ Drej skiven~n~~INPUT_SPRINT~ Drej langsomt~n~Drej tilbage, når den klikker~n~~INPUT_CELLPHONE_CANCEL~ Stop",
-    de = "~INPUT_MOVE_LEFT_ONLY~ ~INPUT_MOVE_RIGHT_ONLY~ Wählscheibe drehen~n~~INPUT_SPRINT~ Langsam drehen~n~Zurückdrehen, wenn es klickt~n~~INPUT_CELLPHONE_CANCEL~ Abbrechen",
-    sv = "~INPUT_MOVE_LEFT_ONLY~ ~INPUT_MOVE_RIGHT_ONLY~ Vrid ratten~n~~INPUT_SPRINT~ Vrid långsamt~n~Vrid tillbaka när det klickar~n~~INPUT_CELLPHONE_CANCEL~ Avbryt",
-    no = "~INPUT_MOVE_LEFT_ONLY~ ~INPUT_MOVE_RIGHT_ONLY~ Vri skiven~n~~INPUT_SPRINT~ Vri sakte~n~Vri tilbake når det klikker~n~~INPUT_CELLPHONE_CANCEL~ Avbryt",
-    nl = "~INPUT_MOVE_LEFT_ONLY~ ~INPUT_MOVE_RIGHT_ONLY~ Draai aan de knop~n~~INPUT_SPRINT~ Langzaam draaien~n~Draai terug als het klikt~n~~INPUT_CELLPHONE_CANCEL~ Stoppen",
-}
 
 -- Movement, attack, aim, sprint, cover and pause menu stay off while cracking
 local Disabled = {21, 24, 25, 30, 31, 32, 33, 34, 35, 44, 140, 141, 142, 199, 200}
@@ -118,15 +112,14 @@ local function Draw(s, o, aspect)
     end
 end
 
-local function DrawTop(text)
-    SetTextFont(4)
-    SetTextScale(0.45, 0.45)
-    SetTextColour(255, 255, 255, 220)
-    SetTextCentre(true)
-    SetTextOutline()
-    BeginTextCommandDisplayText("STRING")
-    AddTextComponentSubstringPlayerName(text)
-    EndTextCommandDisplayText(0.5, 0.06)
+-- The key bar: A / D, SHIFT and ESC
+local function Buttons()
+    return MGButtons.Load({
+        {control = 200, label = ML("btn_stop")},
+        {control = 21, label = ML("btn_slow")},
+        {control = 35, label = ML("btn_right")},
+        {control = 34, label = ML("btn_left")},
+    })
 end
 
 local function PlayAnim(ped, anim, current)
@@ -135,7 +128,7 @@ local function PlayAnim(ped, anim, current)
     return anim
 end
 
-function MGSafe.Start(o)
+function MGSafe.Start(o, intro)
     if MGSafe.active then return false end
     RequestStreamedTextureDict(Dict, false)
     local waited = 0
@@ -152,10 +145,16 @@ function MGSafe.Start(o)
         while not HasAnimDictLoaded(Anims) and GetGameTimer() < until_ do Citizen.Wait(10) end
     end
 
+    if intro and not intro() then
+        SetStreamedTextureDictAsNoLongerNeeded(Dict)
+        return false
+    end
+
     MGSafe.active = true
     if not o.combination then o.combination = MGSafe.Combination(o.numbers) end
     local s = {dial = 0.0, pin = 1, lastDir = 0, armed = false, lives = o.lives}
-    local help = Help[MG.Locale] or Help.en
+    local buttons = Buttons()
+    local title, msg, info = ML("title_safe"), {}, ""
     local started, lastTurn, anim = GetGameTimer(), 0, nil
     local aspect = GetAspectRatio(false)
     local result
@@ -171,26 +170,35 @@ function MGSafe.Start(o)
             result, event = MGSafe.Step(s, input, GetFrameTime(), o)
             local now = GetGameTimer()
             if event == "turn" and now - lastTurn > 60 then Sound("TUMBLER_TURN") lastTurn = now end
-            if event == "click" then Sound("TUMBLER_PIN_FALL") SetPadShake(0, 120, 200) end
-            if event == "pin" then Sound("TUMBLER_PIN_FALL") end
+            if event == "click" then
+                Sound("TUMBLER_PIN_FALL") SetPadShake(0, 120, 200)
+                MGHud.Say(msg, ML("safe_click"), 1500)
+            end
+            if event == "pin" then
+                Sound("TUMBLER_PIN_FALL")
+                MGHud.Say(msg, ML("safe_locked", s.pin - 1, #o.combination), 1800)
+            end
             if event == "open" then Sound("TUMBLER_PIN_FALL_FINAL") end
-            if event == "wrong" then Sound("TUMBLER_RESET") end
+            if event == "wrong" then
+                Sound("TUMBLER_RESET")
+                MGHud.Say(msg, ML("safe_wrong", s.lives), 2000)
+            end
             if o.animate then
                 local turning = input.left ~= input.right
                 anim = PlayAnim(ped, not turning and "idle_base" or (input.right and "dial_turn_clock_normal" or "dial_turn_anti_normal"), anim)
             end
-            DrawTop(("%s: %d   %d s"):format(ML("lives"), s.lives, math.ceil(left)))
+            info = ("%s: %d   %d s"):format(ML("lives"), s.lives, math.ceil(left))
         end
         Draw(s, o, aspect)
-        BeginTextCommandDisplayHelp("STRING")
-        AddTextComponentSubstringPlayerName(help)
-        EndTextCommandDisplayHelp(0, false, false, -1)
+        MGHud.Draw(title, info, msg)
+        MGButtons.Draw(buttons)
         Citizen.Wait(0)
     end
 
     if result and o.animate then Sound("SAFE_DOOR_OPEN") end
     if o.animate then ClearPedTasks(ped) end
     SetStreamedTextureDictAsNoLongerNeeded(Dict)
+    MGButtons.Release(buttons)
     MGSafe.active = false
     return result
 end

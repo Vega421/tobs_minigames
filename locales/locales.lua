@@ -1,5 +1,6 @@
--- Texts for the web minigames and the test command. [SPACE], [ESC], [W] and so on are drawn as keys. The drill and the laptop keep their GTA help
--- texts in client/drill.lua and client/hack.lua. Keep %s and %d: they're replaced with words and numbers.
+-- Texts for the minigames and the test command. [SPACE], [ESC], [W] and so on are drawn as keys on the web
+-- page (the "how to play" cards, also the ones before the GTA screens). The laptop's own screen texts are in
+-- client/hack.lua. Keep %s and %d: they're replaced with words and numbers; %% is a percent sign.
 -- Wire colours come twice: as an adjective for "the red wire" (red = ...) and as a name for
 -- "the wire right below red" (n_red = ...).
 
@@ -38,6 +39,14 @@ MGLocales = {
         title_drill = "GTA drill",
         title_hack = "GTA hacking laptop",
         title_safe = "GTA safe",
+        -- GTA screens (drill, hack, safe): the card before them, the key bar and the messages
+        howto_drill = "Push the drill with [W] through all 4 lock pins. [A] and [D] change the speed: faster cuts quicker but heats the drill up. Stop pushing, or pull back with [S], to let it cool. At full heat it breaks.",
+        howto_hack = "Open My Computer. Run HackConnect.exe and connect with the arrow keys and [ENTER]. Then run BruteForce.exe and stop each letter column on the password with [ENTER] or a click. Wrong picks cost a life.",
+        howto_safe = "Turn the dial to each number with [A] and [D]: the first to the right, the next to the left. When it clicks, turn back to lock the number in. Hold [SHIFT] to turn slowly. Turning back anywhere else costs a life.",
+        btn_push = "Push", btn_pull = "Pull back", btn_slower = "Slower", btn_faster = "Faster", btn_stop = "Stop", btn_select = "Select",
+        btn_back = "Back", btn_move = "Move", btn_left = "Turn left", btn_right = "Turn right", btn_slow = "Slowly",
+        drill_pin = "Lock pin %d/%d broken", drill_hot = "Overheating: ease off", drill_jam = "Too slow: speed up", depth = "Depth %d%%",
+        safe_click = "Click: turn back now", safe_locked = "Number %d/%d locked", safe_wrong = "Wrong turn: %d lives left",
         menu_title = "Minigame test",
         menu_hint = "Nothing is given or taken. Results show in the F8 console too.",
         difficulty = "Difficulty",
@@ -91,6 +100,14 @@ MGLocales = {
         title_drill = "GTA-boremaskine",
         title_hack = "GTA-hackerlaptop",
         title_safe = "GTA-pengeskab",
+        -- GTA screens (drill, hack, safe): the card before them, the key bar and the messages
+        howto_drill = "Skub boret frem med [W] gennem alle 4 låsestifter. [A] og [D] ændrer hastigheden: hurtigere skærer hurtigere, men varmer boret op. Stop med at skubbe, eller træk tilbage med [S], så det køler af. Ved fuld varme går det i stykker.",
+        howto_hack = "Åbn Denne computer. Kør HackConnect.exe og forbind med piletasterne og [ENTER]. Kør derefter BruteForce.exe og stop hver bogstavkolonne på kodeordet med [ENTER] eller et klik. Forkerte valg koster et liv.",
+        howto_safe = "Drej skiven til hvert tal med [A] og [D]: det første til højre, det næste til venstre. Når den klikker, så drej tilbage for at låse tallet. Hold [SHIFT] for at dreje langsomt. Drejer du tilbage et andet sted, koster det et liv.",
+        btn_push = "Skub", btn_pull = "Træk tilbage", btn_slower = "Langsommere", btn_faster = "Hurtigere", btn_stop = "Stop", btn_select = "Vælg",
+        btn_back = "Tilbage", btn_move = "Flyt", btn_left = "Drej til venstre", btn_right = "Drej til højre", btn_slow = "Langsomt",
+        drill_pin = "Låsestift %d/%d brudt", drill_hot = "Overophedning: sæt farten ned", drill_jam = "For langsomt: sæt farten op", depth = "Dybde %d%%",
+        safe_click = "Klik: drej tilbage nu", safe_locked = "Tal %d/%d låst", safe_wrong = "Forkert drejning: %d liv tilbage",
         menu_title = "Test af minispil",
         menu_hint = "Intet gives eller tages. Resultaterne vises også i F8-konsollen.",
         difficulty = "Sværhedsgrad",
@@ -144,6 +161,14 @@ MGLocales = {
         title_drill = "GTA-Bohrer",
         title_hack = "GTA-Hacker-Laptop",
         title_safe = "GTA-Tresor",
+        -- GTA screens (drill, hack, safe): the card before them, the key bar and the messages
+        howto_drill = "Schiebe den Bohrer mit [W] durch alle 4 Schlossstifte. [A] und [D] ändern die Geschwindigkeit: schneller bohrt schneller, erhitzt den Bohrer aber. Hör auf zu schieben oder zieh mit [S] zurück, damit er abkühlt. Bei voller Hitze geht er kaputt.",
+        howto_hack = "Öffne den Arbeitsplatz. Starte HackConnect.exe und verbinde dich mit den Pfeiltasten und [ENTER]. Starte dann BruteForce.exe und stoppe jede Buchstabenspalte auf dem Passwort mit [ENTER] oder einem Klick. Falsche Treffer kosten ein Leben.",
+        howto_safe = "Dreh die Wählscheibe mit [A] und [D] zu jeder Zahl: die erste nach rechts, die nächste nach links. Wenn es klickt, dreh zurück, um die Zahl einzurasten. Halte [SHIFT], um langsam zu drehen. Zurückdrehen an einer anderen Stelle kostet ein Leben.",
+        btn_push = "Vorschieben", btn_pull = "Zurückziehen", btn_slower = "Langsamer", btn_faster = "Schneller", btn_stop = "Abbrechen", btn_select = "Auswählen",
+        btn_back = "Zurück", btn_move = "Bewegen", btn_left = "Nach links drehen", btn_right = "Nach rechts drehen", btn_slow = "Langsam",
+        drill_pin = "Schlossstift %d/%d gebrochen", drill_hot = "Überhitzung: langsamer", drill_jam = "Zu langsam: schneller bohren", depth = "Tiefe %d%%",
+        safe_click = "Klick: jetzt zurückdrehen", safe_locked = "Zahl %d/%d eingerastet", safe_wrong = "Falsch gedreht: noch %d Leben",
         menu_title = "Minispiel-Test",
         menu_hint = "Es wird nichts gegeben oder genommen. Die Ergebnisse stehen auch in der F8-Konsole.",
         difficulty = "Schwierigkeit",
@@ -197,6 +222,14 @@ MGLocales = {
         title_drill = "GTA-borr",
         title_hack = "GTA-hackerdator",
         title_safe = "GTA-kassaskåp",
+        -- GTA screens (drill, hack, safe): the card before them, the key bar and the messages
+        howto_drill = "Tryck fram borren med [W] genom alla 4 låssprintar. [A] och [D] ändrar hastigheten: snabbare borrar fortare men värmer upp borren. Sluta trycka, eller dra tillbaka med [S], så att den svalnar. Vid full värme går den sönder.",
+        howto_hack = "Öppna Den här datorn. Kör HackConnect.exe och anslut med piltangenterna och [ENTER]. Kör sedan BruteForce.exe och stoppa varje bokstavskolumn på lösenordet med [ENTER] eller ett klick. Fel val kostar ett liv.",
+        howto_safe = "Vrid ratten till varje siffra med [A] och [D]: den första åt höger, nästa åt vänster. När det klickar, vrid tillbaka för att låsa siffran. Håll [SHIFT] för att vrida långsamt. Vrider du tillbaka någon annanstans kostar det ett liv.",
+        btn_push = "Tryck fram", btn_pull = "Dra tillbaka", btn_slower = "Långsammare", btn_faster = "Snabbare", btn_stop = "Avbryt", btn_select = "Välj",
+        btn_back = "Tillbaka", btn_move = "Flytta", btn_left = "Vrid åt vänster", btn_right = "Vrid åt höger", btn_slow = "Långsamt",
+        drill_pin = "Låssprint %d/%d bruten", drill_hot = "Överhettning: sakta ner", drill_jam = "För långsamt: öka farten", depth = "Djup %d%%",
+        safe_click = "Klick: vrid tillbaka nu", safe_locked = "Siffra %d/%d låst", safe_wrong = "Fel håll: %d liv kvar",
         menu_title = "Test av minispel",
         menu_hint = "Inget ges eller tas. Resultaten visas även i F8-konsolen.",
         difficulty = "Svårighetsgrad",
@@ -250,6 +283,14 @@ MGLocales = {
         title_drill = "GTA-bor",
         title_hack = "GTA-hackerlaptop",
         title_safe = "GTA-safe",
+        -- GTA screens (drill, hack, safe): the card before them, the key bar and the messages
+        howto_drill = "Skyv boret frem med [W] gjennom alle 4 låsestiftene. [A] og [D] endrer hastigheten: raskere borer fortere, men varmer opp boret. Slutt å skyve, eller trekk tilbake med [S], så det kjøles ned. Ved full varme går det i stykker.",
+        howto_hack = "Åpne Denne datamaskinen. Kjør HackConnect.exe og koble til med piltastene og [ENTER]. Kjør så BruteForce.exe og stopp hver bokstavkolonne på passordet med [ENTER] eller et klikk. Feil valg koster et liv.",
+        howto_safe = "Vri skiven til hvert tall med [A] og [D]: det første mot høyre, det neste mot venstre. Når det klikker, vri tilbake for å låse tallet. Hold [SHIFT] for å vri sakte. Vrir du tilbake et annet sted, koster det et liv.",
+        btn_push = "Skyv", btn_pull = "Trekk tilbake", btn_slower = "Saktere", btn_faster = "Raskere", btn_stop = "Avbryt", btn_select = "Velg",
+        btn_back = "Tilbake", btn_move = "Flytt", btn_left = "Vri mot venstre", btn_right = "Vri mot høyre", btn_slow = "Sakte",
+        drill_pin = "Låsestift %d/%d brukket", drill_hot = "Overoppheting: senk farten", drill_jam = "For sakte: øk farten", depth = "Dybde %d%%",
+        safe_click = "Klikk: vri tilbake nå", safe_locked = "Tall %d/%d låst", safe_wrong = "Feil vei: %d liv igjen",
         menu_title = "Test av minispill",
         menu_hint = "Ingenting gis eller tas. Resultatene vises også i F8-konsollen.",
         difficulty = "Vanskelighetsgrad",
@@ -303,6 +344,14 @@ MGLocales = {
         title_drill = "GTA-boor",
         title_hack = "GTA-hackerlaptop",
         title_safe = "GTA-kluis",
+        -- GTA screens (drill, hack, safe): the card before them, the key bar and the messages
+        howto_drill = "Duw de boor met [W] door alle 4 slotpinnen. [A] en [D] veranderen de snelheid: sneller boort vlotter maar verhit de boor. Stop met duwen, of trek terug met [S], om af te koelen. Bij volle hitte gaat hij kapot.",
+        howto_hack = "Open Deze computer. Start HackConnect.exe en maak verbinding met de pijltjestoetsen en [ENTER]. Start dan BruteForce.exe en stop elke letterkolom op het wachtwoord met [ENTER] of een klik. Een verkeerde keuze kost een leven.",
+        howto_safe = "Draai de knop met [A] en [D] naar elk getal: het eerste naar rechts, het volgende naar links. Als het klikt, draai terug om het getal vast te zetten. Houd [SHIFT] ingedrukt om langzaam te draaien. Ergens anders terugdraaien kost een leven.",
+        btn_push = "Duwen", btn_pull = "Terugtrekken", btn_slower = "Langzamer", btn_faster = "Sneller", btn_stop = "Stoppen", btn_select = "Kiezen",
+        btn_back = "Terug", btn_move = "Bewegen", btn_left = "Naar links draaien", btn_right = "Naar rechts draaien", btn_slow = "Langzaam",
+        drill_pin = "Slotpin %d/%d gebroken", drill_hot = "Oververhit: rustiger aan", drill_jam = "Te langzaam: sneller boren", depth = "Diepte %d%%",
+        safe_click = "Klik: draai nu terug", safe_locked = "Getal %d/%d vast", safe_wrong = "Verkeerd gedraaid: nog %d levens",
         menu_title = "Minigame-test",
         menu_hint = "Er wordt niets gegeven of genomen. De resultaten staan ook in de F8-console.",
         difficulty = "Moeilijkheid",

@@ -91,6 +91,10 @@ Every export, setting, event and command is in **[EXPORTS.md](EXPORTS.md)**, inc
 
 Pick one with `MG.Style` in `config.lua`, and change single colours with `MG.Theme`, for example `MG.Theme = {accent = "#3e7bfa"}`.
 
+The three GTA screens (drill, hack, safe) show GTA's own key bar at the bottom right, like in GTA
+Online, plus the game's name, the time or lives, and messages (a broken pin, a locked number) at the
+top, and start with the same "how to play" card as the web minigames.
+
 The web minigames also:
 
 - start with a short "how to play" card (`MG.Intro`)

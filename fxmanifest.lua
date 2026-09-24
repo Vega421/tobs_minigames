@@ -14,6 +14,7 @@ shared_scripts {
 }
 
 client_scripts {
+    "client/gtaui.lua", -- the key bar and top-of-screen text for the drill, hack and safe
     "client/drill.lua",
     "client/hack.lua",
     "client/safe.lua",

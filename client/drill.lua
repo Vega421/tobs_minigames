@@ -8,23 +8,17 @@
 -- The drill reacts: the camera and controller shake with the drill speed while cutting, each lock
 -- pin breaks with a sound and a jolt, and pushing too slowly jams the drill.
 --
--- MGDrill.Start(o) blocks until done and returns true (drilled through), false (broken, stopped,
--- died) or nil (the screen didn't load). o = the settings from MG.Drill (see config.lua). It is the
+-- MGDrill.Start(o, intro) blocks until done and returns true (drilled through), false (broken,
+-- stopped, died) or nil (the screen didn't load). o = the settings from MG.Drill (see config.lua).
+-- intro: shows the "how to play" card once the screen has loaded; false from it = gave up. It is the
 -- timed part of drilling: a script should run it instead of a progress bar, not before one.
+-- On screen, like GTA Online: the key bar at the bottom right, the title and depth at the top, and
+-- a message when a pin breaks, the drill jams or it's close to overheating (client/gtaui.lua).
 
 MGDrill = {}
 
 -- Sounds (all in DLC_HEIST_FLEECA_SOUNDSET) and the camera shake used while cutting
 local SoundSet, Shake = "DLC_HEIST_FLEECA_SOUNDSET", "ROAD_VIBRATION_SHAKE"
-
-local Help = {
-    en = "~INPUT_MOVE_UP_ONLY~ Push the drill~n~~INPUT_MOVE_DOWN_ONLY~ Pull back~n~~INPUT_MOVE_LEFT_ONLY~ ~INPUT_MOVE_RIGHT_ONLY~ Drill speed~n~~INPUT_CELLPHONE_CANCEL~ Stop",
-    da = "~INPUT_MOVE_UP_ONLY~ Skub boret frem~n~~INPUT_MOVE_DOWN_ONLY~ Træk tilbage~n~~INPUT_MOVE_LEFT_ONLY~ ~INPUT_MOVE_RIGHT_ONLY~ Borehastighed~n~~INPUT_CELLPHONE_CANCEL~ Stop",
-    de = "~INPUT_MOVE_UP_ONLY~ Bohrer vorschieben~n~~INPUT_MOVE_DOWN_ONLY~ Zurückziehen~n~~INPUT_MOVE_LEFT_ONLY~ ~INPUT_MOVE_RIGHT_ONLY~ Bohrgeschwindigkeit~n~~INPUT_CELLPHONE_CANCEL~ Abbrechen",
-    sv = "~INPUT_MOVE_UP_ONLY~ Tryck fram borren~n~~INPUT_MOVE_DOWN_ONLY~ Dra tillbaka~n~~INPUT_MOVE_LEFT_ONLY~ ~INPUT_MOVE_RIGHT_ONLY~ Borrhastighet~n~~INPUT_CELLPHONE_CANCEL~ Avbryt",
-    no = "~INPUT_MOVE_UP_ONLY~ Skyv boret frem~n~~INPUT_MOVE_DOWN_ONLY~ Trekk tilbake~n~~INPUT_MOVE_LEFT_ONLY~ ~INPUT_MOVE_RIGHT_ONLY~ Borehastighet~n~~INPUT_CELLPHONE_CANCEL~ Avbryt",
-    nl = "~INPUT_MOVE_UP_ONLY~ Boor naar voren duwen~n~~INPUT_MOVE_DOWN_ONLY~ Terugtrekken~n~~INPUT_MOVE_LEFT_ONLY~ ~INPUT_MOVE_RIGHT_ONLY~ Boorsnelheid~n~~INPUT_CELLPHONE_CANCEL~ Stoppen",
-}
 
 -- Movement, attack, aim, cover and pause menu stay off while drilling
 local Disabled = {24, 25, 30, 31, 32, 33, 34, 35, 44, 140, 141, 142, 199, 200}
@@ -104,7 +98,18 @@ local function ReadInput()
     }
 end
 
-function MGDrill.Start(o)
+-- The key bar: W / S / A / D and ESC, labelled in MG.Locale
+local function Buttons()
+    return MGButtons.Load({
+        {control = 200, label = ML("btn_stop")},
+        {control = 35, label = ML("btn_faster")},
+        {control = 34, label = ML("btn_slower")},
+        {control = 33, label = ML("btn_pull")},
+        {control = 32, label = ML("btn_push")},
+    })
+end
+
+function MGDrill.Start(o, intro)
     if MGDrill.active then return false end
 
     local sf = RequestScaleformMovie("DRILLING")
@@ -115,12 +120,19 @@ function MGDrill.Start(o)
         waited = waited + 10
     end
 
+    if intro and not intro() then
+        SetScaleformMovieAsNoLongerNeeded(sf)
+        return false
+    end
+
     MGDrill.active = true
+    local buttons = Buttons()
+    local title, msg, pins = ML("title_drill"), {}, 0
     local s = {speed = 0.0, pos = 0.0, depth = 0.0, heat = 0.0}
     local shown = {}
     for _, m in ipairs({"SET_SPEED", "SET_DRILL_POSITION", "SET_TEMPERATURE", "SET_HOLE_DEPTH"}) do SetFloat(sf, m, 0.0) end
 
-    local ped, help = PlayerPedId(), Help[MG.Locale] or Help.en
+    local ped = PlayerPedId()
     local result, event, fx = nil, nil, {}
     if o.shake then ShakeGameplayCam(Shake, 0.0) end
     while result == nil do
@@ -128,18 +140,26 @@ function MGDrill.Start(o)
         if IsControlJustPressed(0, 177) or IsDisabledControlJustPressed(0, 200) or IsEntityDead(ped) then
             result = false
         else
+            local jamAt = fx.jamAt or 0
             result, event = MGDrill.Step(s, ReadInput(), GetFrameTime(), o)
             if result == false then event, fx.jamAt = "jam", 0 end -- overheated: the drill jams and breaks
             Effects(s, event, o, fx, GetGameTimer())
+            if event == "pin" then
+                pins = pins + 1
+                MGHud.Say(msg, ML("drill_pin", pins, #(o.pins or {})), 1800)
+            elseif event == "jam" and result == nil and GetGameTimer() >= jamAt then
+                MGHud.Say(msg, ML("drill_jam"), 1500)
+            elseif s.heat >= 0.8 and result == nil then
+                MGHud.Say(msg, ML("drill_hot"), 300)
+            end
         end
 
         for m, v in pairs({SET_SPEED = s.speed, SET_DRILL_POSITION = s.pos, SET_TEMPERATURE = s.heat, SET_HOLE_DEPTH = s.depth}) do
             if shown[m] ~= v then SetFloat(sf, m, v); shown[m] = v end
         end
         DrawScaleformMovieFullscreen(sf, 255, 255, 255, 255, 0)
-        BeginTextCommandDisplayHelp("STRING")
-        AddTextComponentSubstringPlayerName(help)
-        EndTextCommandDisplayHelp(0, false, false, -1)
+        MGHud.Draw(title, ML("depth", math.floor(s.pos * 100)), msg)
+        MGButtons.Draw(buttons)
         Citizen.Wait(0)
     end
 
@@ -148,6 +168,7 @@ function MGDrill.Start(o)
         StopPadShake(0)
     end
     SetScaleformMovieAsNoLongerNeeded(sf)
+    MGButtons.Release(buttons)
     MGDrill.active = false
     return result
 end

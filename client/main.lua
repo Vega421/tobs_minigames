@@ -80,6 +80,49 @@ local function RunWeb(name, o, style)
     return result
 end
 
+-- The "how to play" card before a GTA screen (drill, hack, safe), in the same look as the web games.
+-- It shows after GTA's screen has loaded, so a game that falls back never shows a card first.
+-- Returns true to start, false when the player gave up (ESC) or died.
+local IntroPending
+RegisterNUICallback("introDone", function(data, cb)
+    local p = IntroPending
+    if p then
+        IntroPending = nil
+        SetNuiFocus(false, false)
+        p:resolve(type(data) == "table" and data.start == true)
+    end
+    cb({})
+end)
+
+local function ShowIntro(name, style)
+    local intro = tonumber(MG.Intro) or 0
+    local texts = MGTexts()
+    if intro <= 0 or texts["howto_" .. name] == nil then return true end
+    local p = promise.new()
+    IntroPending = p
+    SetNuiFocus(true, true) -- before opening, so an answer can never leave the focus on
+    SendNUIMessage({action = "intro", game = name, text = texts, theme = MG.Theme, style = style or MG.Style,
+        ui = {scale = MG.Scale, intro = intro, textSize = MG.TextSize, reducedMotion = MG.ReducedMotion}})
+    local ped = PlayerPedId()
+    local deadline = GetGameTimer() + (intro + 30) * 1000
+    Citizen.CreateThread(function()
+        while IntroPending == p do
+            -- died: don't start; the page never answered: start anyway, the game has its own limits
+            local dead, late = IsEntityDead(ped), GetGameTimer() > deadline
+            if dead or late then
+                IntroPending = nil
+                SetNuiFocus(false, false)
+                SendNUIMessage({action = "close"})
+                p:resolve(late and not dead)
+            end
+            Citizen.Wait(250)
+        end
+    end)
+    local start = Citizen.Await(p)
+    if not start then GaveUp = true end
+    return start
+end
+
 -- style: only for the test menu, to try a look without changing the config
 local function Run(name, opts, style)
     local game = MGName(name)
@@ -90,16 +133,23 @@ local function Run(name, opts, style)
     if Active then return false end
     Active = true
     local o = MGOptions(game, opts)
+    GaveUp = false
+    local intro = function() return ShowIntro(game, style) end
     local ok, result = pcall(function()
-        if game == "drill" then return MGDrill.Start(o) end
-        if game == "hack" then return MGHack.Start(o) end
-        if game == "safe" then return MGSafe.Start(o) end
+        if game == "drill" then return MGDrill.Start(o, intro) end
+        if game == "hack" then return MGHack.Start(o, intro) end
+        if game == "safe" then return MGSafe.Start(o, intro) end
         return RunWeb(game, o, style)
     end)
     Active = false
     if not ok then
         print(("^1[tobs_minigames] The %s minigame stopped with an error: %s^7"):format(game, tostring(result)))
         Finish(false)
+        if IntroPending then -- the error came while the card was open: never leave the mouse on
+            IntroPending = nil
+            SetNuiFocus(false, false)
+            SendNUIMessage({action = "close"})
+        end
         result = false
     end
     -- GTA's screen didn't load: play the fallback game instead, at the same difficulty
@@ -158,5 +208,5 @@ if MG.TestCommand then
 end
 
 AddEventHandler("onResourceStop", function(res)
-    if res == GetCurrentResourceName() and Pending then SetNuiFocus(false, false) end
+    if res == GetCurrentResourceName() and (Pending or IntroPending) then SetNuiFocus(false, false) end
 end)
