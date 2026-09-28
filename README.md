@@ -103,7 +103,7 @@ The web minigames also:
 - animate the player: a tablet, a phone, a keypad, hands at work or kneeling (`MG.Animations`)
 - keep the same size on any screen (`MG.Scale`)
 - have bigger text (`MG.TextSize`) and less movement (`MG.ReducedMotion`) for players who need it
-- show each wire's colour name and a pattern, for colour-blind players
+- show each wire's colour name on it, for colour-blind players
 
 ## Settings
 

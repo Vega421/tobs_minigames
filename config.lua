@@ -15,7 +15,7 @@ MG.StartupMessage = true
 MG.Scale = 1.0 -- size on screen: 1.0 = the same share of the screen on any resolution (made for 1080p)
 MG.Intro = 5 -- seconds a "how to play" card shows before the game starts by itself (SPACE or a click starts it sooner). 0 = no card
 MG.TextSize = 1.0 -- bigger or smaller text, e.g. 1.2
-MG.ReducedMotion = false -- true: no shaking, pulsing, blinking or scanlines
+MG.ReducedMotion = false -- true: no shaking or blinking
 
 -- What the player does while a web minigame is open, so others see it. Per game: "tablet",
 -- "phone", "keypad", "repair" (working with the hands), "kneel" or "hotwire" (GTA's own, in a car);
@@ -139,8 +139,8 @@ MG.Keypad = {
 }
 
 -- Cut the wires in the order the clues give. A wrong cut fails. wires: wires in the box;
--- cuts: wires to cut; time: seconds; labels: each wire's colour name on it (every colour also has
--- its own pattern), for colour-blind players
+-- cuts: wires to cut; time: seconds; labels: each wire's colour name on a marker sleeve, for
+-- colour-blind players
 MG.Wires = {
     labels = true,
     easy = {wires = 4, cuts = 2, time = 25},
