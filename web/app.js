@@ -530,10 +530,9 @@
       ctx.translate(0, -band * PRINT_H / 4);
     } else ctx.scale(canvas.width / PRINT_W, canvas.height / PRINT_H);
     ctx.strokeStyle = cssColor('--print') || '#dff4ff';
-    ctx.lineWidth = 2.2;
+    ctx.lineWidth = 3.2;
     ctx.lineCap = 'round';
-    ctx.shadowColor = ctx.strokeStyle;
-    ctx.shadowBlur = 4;
+    ctx.lineJoin = 'round';
     for (const line of M.ridges(seed)) {
       ctx.beginPath();
       line.forEach((p, k) => (k === 0 ? ctx.moveTo(p.x * PRINT_W, p.y * PRINT_H) : ctx.lineTo(p.x * PRINT_W, p.y * PRINT_H)));

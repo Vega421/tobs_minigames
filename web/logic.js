@@ -138,32 +138,65 @@
     return next;
   };
 
-  // The ridge lines of a print as polylines of {x, y} points in 0-1, different for every seed:
-  // rings around a core, bent by a few waves, with gaps like real ridges
+  // The ridge lines of a print as polylines of {x, y} points in 0-1, different for every seed. The
+  // page draws them on a tall canvas (0.6 wide for 1 high), so they're made in that shape: a fingertip
+  // oval holding one of three real patterns (a whorl, a loop or an arch) with only a slight wave, so
+  // the bands of one print are easy to tell from another's.
+  const PRINT_ASPECT = 0.6;
   L.ridges = function (seed) {
     const rand = L.random(seed);
-    const cx = 0.4 + rand() * 0.2;
-    const cy = 0.42 + rand() * 0.16;
-    const waves = [1, 2, 3].map((k) => ({ k: k + L.int(rand, 0, 2), amp: 0.02 + rand() * 0.05, phase: rand() * Math.PI * 2 }));
-    const stretch = 0.75 + rand() * 0.3;
+    const A = PRINT_ASPECT;
+    const type = ['whorl', 'loop', 'arch'][L.int(rand, 0, 2)];
+    const cx = A / 2 + (rand() - 0.5) * 0.08, cy = 0.44 + (rand() - 0.5) * 0.1;
+    const wave = { amp: 0.003 + rand() * 0.004, k: 10 + rand() * 12, phase: rand() * Math.PI * 2 };
+    const slant = (rand() < 0.5 ? -1 : 1) * (0.15 + rand() * 0.2); // which way a loop's legs lean
+    // the fingertip: an oval; lines are cut where they leave it
+    const inside = (X, Y) => ((X - A / 2) / (A * 0.47)) ** 2 + ((Y - 0.52) / 0.47) ** 2 <= 1;
     const lines = [];
-    for (let ring = 1; ring <= 16; ring++) {
-      const r = ring * 0.034;
+    const add = (pts) => {
       let line = [];
-      for (let s = 0; s <= 72; s++) {
-        const a = (s / 72) * Math.PI * 2;
-        if (rand() < 0.035 && line.length > 1) { lines.push(line); line = []; continue; } // a gap
-        let d = r;
-        for (const w of waves) d += w.amp * r * 4 * Math.sin(w.k * a + w.phase + ring * 0.15);
-        const x = cx + Math.cos(a) * d * stretch;
-        const y = cy + Math.sin(a) * d;
-        if (x < 0 || x > 1 || y < 0 || y > 1) { if (line.length > 1) lines.push(line); line = []; continue; }
-        line.push({ x, y });
+      for (const [X, Y0] of pts) {
+        const Y = Y0 + wave.amp * Math.sin(wave.k * X + wave.phase + Y0 * 6);
+        if (!inside(X, Y) || rand() < 0.012) { if (line.length > 1) lines.push(line); line = []; continue; } // the edge, or a ridge ending
+        line.push({ x: X / A, y: Y });
       }
       if (line.length > 1) lines.push(line);
+    };
+    if (type === 'whorl') {
+      for (let k = 1; k <= 13; k++) {
+        const r = k * 0.028, pts = [];
+        for (let s = 0; s <= 80; s++) {
+          const a = (s / 80) * Math.PI * 2;
+          pts.push([cx + Math.cos(a) * r, cy + Math.sin(a) * r * 1.3]);
+        }
+        add(pts);
+      }
+    } else if (type === 'loop') {
+      for (let k = 1; k <= 12; k++) {
+        const r = k * 0.024, pts = [];
+        // one leg up, over the top of the core, and the other leg down, both leaning the same way
+        for (let s = 0; s <= 30; s++) { const Y = 1 - (s / 30) * (1 - cy); pts.push([cx - r + slant * (Y - cy), Y]); }
+        for (let s = 1; s < 40; s++) { const a = Math.PI - (s / 40) * Math.PI; pts.push([cx + Math.cos(a) * r, cy - Math.sin(a) * r * 1.4]); }
+        for (let s = 0; s <= 30; s++) { const Y = cy + (s / 30) * (1 - cy); pts.push([cx + r + slant * (Y - cy), Y]); }
+        add(pts);
+      }
+      // arches over the loop
+      for (let k = 1; k <= 6; k++) {
+        const top = cy - 12 * 0.024 * 1.4 - k * 0.034, pts = [];
+        for (let s = 0; s <= 60; s++) { const X = (s / 60) * A; pts.push([X, top + 0.1 * ((X - cx) / A) ** 2 * 4]); }
+        add(pts);
+      }
+    } else {
+      const n = 22;
+      for (let k = 0; k < n; k++) {
+        const base = 0.06 + k * 0.043, h = 0.03 + 0.09 * Math.sin((Math.PI * (k + 1)) / (n + 1)), pts = [];
+        for (let s = 0; s <= 60; s++) { const X = (s / 60) * A; pts.push([X, base - h * Math.exp(-(((X - cx) / 0.16) ** 2))]); }
+        add(pts);
+      }
     }
     return lines;
   };
+
 
   // HOTWIRE: connect each wire to the terminal that names its colour. With `tricky`, the names are
   // printed in other colours
