@@ -1,50 +1,50 @@
-/* Oswald (SIL Open Font License, fonts/OFL.txt): a condensed face for titles, like GTA's HUD */
-@font-face { font-family: "Oswald"; font-weight: 500; src: url(fonts/oswald-500-latin.woff2) format("woff2"); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
-@font-face { font-family: "Oswald"; font-weight: 500; src: url(fonts/oswald-500-latin-ext.woff2) format("woff2"); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF; }
-@font-face { font-family: "Oswald"; font-weight: 700; src: url(fonts/oswald-700-latin.woff2) format("woff2"); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
-@font-face { font-family: "Oswald"; font-weight: 700; src: url(fonts/oswald-700-latin-ext.woff2) format("woff2"); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+/* tobs_minigames: each game is one object (a keypad, a charge, a junction box, a lock, ...) drawn in
+   SVG, with no window around it. Under it: a short instruction and the time. At the bottom right:
+   GTA's key bar. The objects' shapes carry c-* classes; the paints are the p-* gradients in
+   index.html, reached through the variables below, so MG.Style can repaint everything. */
 
 :root {
-    --bg: rgba(8, 9, 12, 0.86);
-    --panel: #15171c;
-    --line: #2c3038;
-    --text: #f2f3f5;
-    --muted: #9aa1ad;
-    --brand: #ff6b2c;
-    --good: #72cc72; /* GTA's HUD green */
-    --bad: #e24b4b; /* GTA's "wasted" red */
-    --gold: #f0c850; /* GTA's "passed" yellow */
-    --timer: #f2f3f5; /* the timer bar: white like GTA's */
-    --heat: #ffb347; /* a lit thermite pad */
-    --scan: #8fd3ff; /* the tracker's radar and the laser grid's dot */
-    --print: #dff4ff; /* the fingerprint cloner's screen */
-    --font: "Segoe UI", system-ui, -apple-system, sans-serif;
-    --title-font: "Oswald", "Arial Narrow", "Segoe UI", sans-serif;
-    --radius: 3px;
-    --floor: #10131a; /* laser room and tracker background */
-    --floor-line: rgba(255, 255, 255, 0.05);
-    --car-wheel: #1b1f28;
-    --car-body: #2b313d;
-    --car-edge: #4a5160;
-    --car-glass: #1e2330;
+    --font: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    --mono: Consolas, "Lucida Console", Menlo, monospace;
+    --text: #ffffff;
+    --muted: rgba(255, 255, 255, 0.75);
+    --brand: #ffffff; /* MG.Theme accent: the few highlights */
+    --bg: rgba(0, 0, 0, 0.74); /* MG.Theme background: the intro card, the result, the menu */
+    --good: #3fa76a;
+    --bad: #e0453a;
+    --gold: #d9b85e; /* the lockpick's sweet spot */
     --text-scale: 1;
-    --key-metal: #cbb482; /* brass */
-    --key-edge: #8c7a55;
-    /* The devices: a metal case, its screen, its keys */
-    --dev-case: linear-gradient(160deg, #50555e, #2c3037 45%, #1d2025);
-    --dev-edge: #0b0c0f;
-    --dev-shine: rgba(255, 255, 255, 0.18);
-    --screen-bg: #9fb58a; /* an LCD */
-    --screen-text: #1b2616;
-    --screen-glow: none;
-    --dev-key: linear-gradient(#3b3f47, #262a30);
-    --dev-key-text: #eef0f3;
-    --dev-key-edge: #0e0f12;
-    --paper: #efe7cf;
-    --ink: #22252b;
-    --hand-font: "Segoe Print", "Bradley Hand", "Comic Sans MS", cursive;
-    --box: linear-gradient(170deg, #8b9098, #5d626b 60%, #4a4e56);
-    --box-inside: #1b1d22;
+    --ui: 1;
+    /* materials */
+    --alu: url(#p-alu);
+    --paint: url(#p-paint);
+    --plastic: url(#p-plastic);
+    --keycap: url(#p-key);
+    --brass: url(#p-brass);
+    --brass-h: url(#p-brass-h);
+    --steel: url(#p-steel);
+    --wood: url(#p-wood);
+    --vice: url(#p-vice);
+    --edge: #7d8288; /* outlines of metal cases */
+    --edge-dark: #0f1012; /* outlines of plastic cases */
+    --recess: #17181b;
+    --display: #1b1e1d;
+    --display-text: #9fe3b0;
+    --print-ink: #5b6066;
+    --print-ink-light: #b9bdc2;
+    /* the laser grid's floor plan and the tracker's car */
+    --floor: #1a1d22;
+    --floor-line: rgba(255, 255, 255, 0.04);
+    --wall: #6b7078;
+    --laser: #ff3b30;
+    --dot: #ffffff;
+    --car-body: #cfd3d8;
+    --car-edge: #8d9298;
+    --car-glass: #2b3139;
+    --car-roof: #bfc4ca;
+    --car-wheel: #26292e;
+    --scan: #ffffff;
+    --print: #dff4ff; /* the fingerprint cloner's screen */
 }
 
 * { box-sizing: border-box; }
@@ -61,300 +61,228 @@ html, body {
 
 .hidden { display: none !important; }
 
-#mg {
-    position: fixed;
-    inset: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: transparent;
-}
+/* ---------------------------------------------------------------------------------------------
+   The frame: the object, the instruction under it, the time, and the key bar
+   --------------------------------------------------------------------------------------------- */
 
-.panel {
-    position: relative;
-    width: 680px;
-    transform-origin: center;
-    background: var(--bg);
-    border-radius: var(--radius);
-    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.65);
-    padding: 0 24px 14px;
+#mg { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; }
+.panel { position: relative; display: flex; flex-direction: column; align-items: center; gap: 16px; transform-origin: center; }
+main#mg-body { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.label {
+    max-width: 680px; text-align: center; font-size: calc(13px * var(--text-scale)); letter-spacing: 0.3em;
+    text-transform: uppercase; color: rgba(255, 255, 255, 0.92); text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85);
 }
+.label kbd { letter-spacing: 0; }
+.hud { display: flex; gap: 22px; min-height: 20px; font-size: calc(14px * var(--text-scale)); text-shadow: 0 1px 3px #000; }
+.hud span:empty { display: none; }
+#mg-time { font-variant-numeric: tabular-nums; }
+.low-time #mg-time { color: var(--bad); animation: blink 1s infinite; }
+@keyframes blink { 50% { opacity: 0.45; } }
+.flash { min-height: 20px; text-align: center; font-size: calc(14px * var(--text-scale)); font-weight: 600; color: #ff8a80; text-shadow: 0 1px 3px #000; }
+.row { display: flex; align-items: center; gap: 34px; }
 
-/* The header: GTA's condensed white title on a dark band with an accent line under it */
-header {
-    display: flex; align-items: center; justify-content: space-between; gap: 12px;
-    margin: 0 -24px; padding: 14px 24px 12px;
-    background: linear-gradient(90deg, rgba(0, 0, 0, 0.55), rgba(0, 0, 0, 0.2));
-    border-radius: var(--radius) var(--radius) 0 0;
-}
-h1 {
-    margin: 0; font-family: var(--title-font); font-weight: 700; text-transform: uppercase;
-    font-size: calc(26px * var(--text-scale)); line-height: 1; letter-spacing: 0.03em;
-}
-.header-right { display: flex; align-items: center; gap: 16px; }
-#mg-status { display: flex; align-items: center; gap: 5px; color: var(--muted); font: 500 calc(13px * var(--text-scale)) var(--title-font); text-transform: uppercase; letter-spacing: 0.06em; }
-.counter-label { margin-right: 4px; }
-.dot { width: 10px; height: 10px; border-radius: 50%; background: var(--text); box-shadow: 0 0 5px rgba(255, 255, 255, 0.5); }
-.dot.lost { background: transparent; box-shadow: none; border: 1.5px solid rgba(255, 255, 255, 0.28); }
-/* The time: like GTA's timer bar at the bottom right */
-#mg-time { min-width: 44px; text-align: right; font: 700 calc(22px * var(--text-scale))/1 var(--title-font); font-variant-numeric: tabular-nums; color: var(--text); }
-#mg-time:empty { display: none; }
-.low-time #mg-time { color: var(--bad); animation: low 1s infinite; }
-.low-time #mg-timer { background: var(--bad) !important; }
-@keyframes low { 50% { opacity: 0.45; } }
-
-.timer { height: 3px; background: rgba(255, 255, 255, 0.1); margin: 0 -24px 20px; overflow: hidden; }
-#mg-timer { height: 100%; width: 100%; background: var(--timer); transform-origin: left; }
-
-main { display: flex; align-items: center; justify-content: center; }
-
-/* The footer: the hint on the left, GTA's key bar ("[ESC] Give up") on the right */
-footer {
-    display: flex; justify-content: space-between; align-items: center; gap: 12px;
-    margin: 18px -24px -14px; padding: 9px 24px;
-    background: rgba(0, 0, 0, 0.45); border-radius: 0 0 var(--radius) var(--radius);
-    font-size: calc(13px * var(--text-scale)); color: var(--text);
-}
-footer:has(> span:empty + span:empty) { display: none; }
 kbd {
-    display: inline-block; min-width: 1.8em; padding: 0 6px; margin: 0 3px; text-align: center;
-    font: 700 0.82em/1.65 var(--title-font); letter-spacing: 0.04em; text-transform: uppercase;
-    color: #111; background: #f2f3f5; border-radius: 3px; box-shadow: 0 1px 0 rgba(0, 0, 0, 0.6);
+    display: inline-flex; align-items: center; justify-content: center; min-width: 22px; height: 22px; padding: 0 6px; margin: 0 2px;
+    font: 700 11px Arial, sans-serif; color: #000; background: #fff; border-radius: 3px; vertical-align: middle;
 }
-#mg-giveup { white-space: nowrap; color: var(--muted); }
 
-/* The end, like GTA's "mission passed": a dark band across with a big title */
-#mg-result {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    align-items: center;
-    justify-content: center;
-    animation: fade-in 0.2s;
-    border-radius: var(--radius);
-    background: linear-gradient(transparent 22%, rgba(0, 0, 0, 0.88) 36%, rgba(0, 0, 0, 0.88) 64%, transparent 78%), rgba(0, 0, 0, 0.35);
-    font: 700 calc(46px * var(--text-scale))/1.05 var(--title-font);
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
+/* GTA's key bar, bottom right of the screen */
+.keybar {
+    position: fixed; right: 36px; bottom: 36px; display: flex; gap: 18px; padding: 8px 14px;
+    background: rgba(0, 0, 0, 0.6); font-size: calc(14px * var(--text-scale));
+    transform: scale(var(--ui)); transform-origin: bottom right;
 }
-#mg-result-title { animation: stamp 0.35s ease-out; text-shadow: 0 2px 0 rgba(0, 0, 0, 0.7); }
-@keyframes stamp { from { transform: scale(1.35); opacity: 0; } }
-#mg-result.good { color: var(--gold); }
-#mg-result.bad { color: var(--bad); }
-#mg-result-sub { font: 500 calc(16px * var(--text-scale)) var(--font); color: var(--text); letter-spacing: 0; text-transform: none; }
+.keybar span { display: flex; align-items: center; gap: 7px; }
+.keybar:empty { display: none; }
 
-/* Intro card: how to play, then SPACE / a click / the countdown starts the game */
+/* The "how to play" card */
+.panel.intro > main, .panel.intro > .label, .panel.intro > .hud { display: none; }
 #mg-intro {
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    gap: 14px; padding: 28px 24px 18px; text-align: center; cursor: pointer;
+    display: flex; flex-direction: column; align-items: center; gap: 12px; max-width: 540px; padding: 26px 36px 20px;
+    text-align: center; background: var(--bg); cursor: pointer;
 }
-.panel.intro > header, .panel.intro > .timer, .panel.intro > main, .panel.intro > footer { display: none; }
-#mg-intro h2 {
-    margin: 0; font: 700 calc(34px * var(--text-scale))/1 var(--title-font); text-transform: uppercase; letter-spacing: 0.04em;
-    padding-bottom: 10px; border-bottom: 2px solid rgba(255, 255, 255, 0.35);
+#mg-intro h2 { margin: 0; font-size: calc(15px * var(--text-scale)); font-weight: 600; letter-spacing: 0.3em; text-transform: uppercase; }
+#mg-intro-howto { margin: 0; font-size: calc(16px * var(--text-scale)); line-height: 1.6; }
+#mg-intro-start { font-size: calc(14px * var(--text-scale)); }
+#mg-intro-count { font-size: calc(12px * var(--text-scale)); color: var(--muted); }
+
+/* The end: a card over the object */
+#mg-result {
+    position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); min-width: 320px; padding: 22px 40px;
+    display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; background: var(--bg);
+    animation: fade-in 0.2s;
 }
-#mg-intro-howto { margin: 0; max-width: 470px; font-size: calc(16px * var(--text-scale)); line-height: 1.65; }
-#mg-intro-start { font-size: calc(14px * var(--text-scale)); font-weight: 700; animation: low 1.6s infinite; }
-#mg-intro-count { font: 500 calc(12px * var(--text-scale)) var(--title-font); color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+#mg-result-title { font-size: calc(26px * var(--text-scale)); font-weight: 600; letter-spacing: 0.25em; text-transform: uppercase; }
+#mg-result.good #mg-result-title { color: var(--good); }
+#mg-result.bad #mg-result-title { color: var(--bad); }
+#mg-result-sub { font-size: calc(14px * var(--text-scale)); color: var(--muted); }
 
 /* Opening, closing and feedback */
-#mg:not(.hidden) .panel { animation: open 0.22s ease-out; }
+#mg:not(.hidden) .panel { animation: open 0.2s ease-out; }
 #mg.leaving { animation: fade-out 0.18s forwards; }
-@keyframes open { from { opacity: 0; translate: 0 12px; } }
+@keyframes open { from { opacity: 0; translate: 0 10px; } }
 @keyframes fade-in { from { opacity: 0; } }
 @keyframes fade-out { to { opacity: 0; } }
-#mg .panel.fx-shake { animation: shake 0.35s; }
-#mg .panel.fx-pulse { animation: pulse 0.35s; }
+#mg-body.fx-shake { animation: shake 0.35s; }
 @keyframes shake { 20% { translate: -7px 0; } 40% { translate: 6px 0; } 60% { translate: -4px 0; } 80% { translate: 2px 0; } }
-@keyframes pulse { 40% { box-shadow: 0 0 0 2px var(--good), 0 0 30px var(--good); } }
 .reduced-motion *, .reduced-motion *::before, .reduced-motion *::after { animation: none !important; transition: none !important; }
-.reduced-motion .style-terminal .panel::after, .reduced-motion.style-terminal .panel::after { display: none; }
 
-/* Each game's own width, so there's no empty space */
-.panel.game-keypad { width: 440px; }
-.panel.game-thermite { width: 520px; }
-.panel.game-lockpick { width: 560px; }
-.panel.game-keyfiling { width: 600px; }
-.panel.game-wires, .panel.game-hotwire { width: 700px; }
-.panel.game-fingerprint, .panel.game-lasers, .panel.game-tracker { width: 700px; }
+/* ---------------------------------------------------------------------------------------------
+   The objects (SVG)
+   --------------------------------------------------------------------------------------------- */
 
-.flash { color: var(--bad); font-weight: 600; min-height: 20px; text-align: center; font-size: calc(15px * var(--text-scale)); }
+.thing { display: block; overflow: visible; font-family: var(--font); filter: drop-shadow(0 18px 24px rgba(0, 0, 0, 0.45)); }
+.btn { cursor: pointer; }
+.c-alu { fill: var(--alu); stroke: var(--edge); }
+.c-paint { fill: var(--paint); stroke: var(--edge); }
+.c-plastic { fill: var(--plastic); stroke: var(--edge-dark); }
+.c-steel { fill: var(--steel); }
+.c-brass { fill: var(--brass); }
+.c-brush { fill: url(#p-brush); pointer-events: none; }
+.c-round { fill: url(#p-round); pointer-events: none; }
+.c-recess { fill: var(--recess); }
+.c-display { fill: var(--display); }
+.c-screw { fill: #9ca1a7; stroke: #6d7278; }
+.c-slot { stroke: #4b5056; stroke-width: 1.6; }
+.t-display { fill: var(--display-text); font-family: var(--mono); }
+.t-display-light { fill: #dfe3e7; font-family: var(--mono); }
+.t-print { fill: var(--print-ink); }
+.t-print-light { fill: var(--print-ink-light); }
+.c-led { transition: fill 0.1s; }
+.c-led.red { fill: #5b1d1d; }
+.c-led.red.on { fill: #ff4a3d; filter: drop-shadow(0 0 3px #ff4a3d); }
+.c-led.green { fill: #1f3a24; }
+.c-led.green.on { fill: #4ee07a; filter: drop-shadow(0 0 3px #4ee07a); }
+.c-led.amber { fill: #4a3514; }
+.c-led.amber.on { fill: #f1a93e; filter: drop-shadow(0 0 3px #f1a93e); }
 
-button {
-    font: inherit;
-    color: var(--text);
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: var(--radius);
-    cursor: pointer;
-}
-/* GTA's menus: the selected line turns white with black text */
-button:hover { background: #f2f3f5; border-color: #f2f3f5; color: #111; }
+/* Keypad */
+.c-key-side { fill: #8d9298; }
+.c-key { fill: var(--keycap); stroke: #9aa0a6; }
+.c-key.go { fill: #e3efe6; }
+.c-key.stop { fill: #f3e3e1; }
+.t-key { fill: #2a2d31; pointer-events: none; }
+.t-key-small { fill: #7a7f85; pointer-events: none; }
+.key .press { transition: transform 0.05s; }
+.key:hover .c-key { stroke: #5e6369; }
+.key:active .press, .key.down .press { transform: translateY(2.5px); }
 
-/* A device: a metal case with screws in the corners, a screen and keys */
-.device {
-    position: relative; padding: 18px 20px 20px; border-radius: 14px;
-    background: var(--dev-case); border: 2px solid var(--dev-edge);
-    box-shadow: inset 0 1px 0 var(--dev-shine), inset 0 -2px 6px rgba(0, 0, 0, 0.45), 0 10px 26px rgba(0, 0, 0, 0.55);
-}
-.screw {
-    position: absolute; width: 10px; height: 10px; border-radius: 50%;
-    background: radial-gradient(circle at 35% 35%, #d9dce1, #6b7079 60%, #2c2f35);
-    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.6);
-}
-.screw::after { content: ""; position: absolute; left: 1px; right: 1px; top: 4px; height: 2px; background: rgba(0, 0, 0, 0.55); transform: rotate(var(--turn, 35deg)); }
-.screw:nth-of-type(1) { top: 7px; left: 7px; }
-.screw:nth-of-type(2) { top: 7px; right: 7px; --turn: -20deg; }
-.screw:nth-of-type(3) { bottom: 7px; left: 7px; --turn: 70deg; }
-.screw:nth-of-type(4) { bottom: 7px; right: 7px; --turn: 10deg; }
-.screen {
-    background: var(--screen-bg); color: var(--screen-text); border: 3px solid var(--dev-edge); border-radius: 6px;
-    box-shadow: inset 0 3px 8px rgba(0, 0, 0, 0.45), var(--screen-glow);
-}
+/* Thermite */
+.c-wire-red, .c-wire-black { fill: none; stroke-width: 7; stroke-linecap: round; }
+.c-wire-red { stroke: #b3261e; }
+.c-wire-black { stroke: #1d1f22; }
+.c-plug { fill: #2a2c30; }
+.c-pad-side { fill: #121315; }
+.c-pad { fill: #3b3e43; stroke: #26282b; transition: fill 0.1s; }
+.c-pad-shine { fill: #fff; opacity: 0.05; pointer-events: none; }
+.pad:hover .c-pad { stroke: rgba(255, 255, 255, 0.55); }
+.pad.lit .c-pad { fill: #f1a93e; stroke: #c9822a; }
+.pad.lit .c-pad-shine { fill: #ffd89a; opacity: 0.55; }
+.pad.hit .c-pad { fill: var(--good); stroke: #2c7a4c; }
+.pad.miss .c-pad { fill: var(--bad); stroke: #9e2a22; }
 
-/* Keypad: a wall keypad with an LCD, two lights and rubber keys */
-.keypad { display: flex; flex-direction: column; align-items: center; gap: 12px; width: 300px; }
-.kp-top { display: flex; justify-content: space-between; align-items: center; width: 100%; padding: 0 4px; }
-.kp-model { font: 700 11px var(--title-font); letter-spacing: 0.25em; color: rgba(255, 255, 255, 0.45); text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.6); }
-.leds { display: flex; gap: 8px; }
-.led { width: 10px; height: 10px; border-radius: 50%; background: #3a1414; box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.7); }
-.led.green { background: #13301a; }
-.keypad .led.red { background: #7a1c1c; }
-.keypad.err .led.red { background: #ff3b3b; box-shadow: 0 0 10px #ff3b3b; }
-.keypad.ok .led.green { background: #45ff6a; box-shadow: 0 0 10px #45ff6a; }
-.keypad.ok .led.red { background: #3a1414; }
-.keypad .screen { width: 100%; padding: 8px 12px; text-align: center; }
-.code {
-    font: 700 calc(40px * var(--text-scale))/1.2 "Consolas", "Lucida Console", monospace;
-    letter-spacing: 0.25em; font-variant-numeric: tabular-nums; min-height: 48px;
-}
-.code.hidden-code { opacity: 0.85; }
-.keypad .flash { min-height: 18px; font-size: calc(13px * var(--text-scale)); color: #ff8a8a; }
-.keys { display: grid; grid-template-columns: repeat(3, 76px); gap: 10px; }
-.keys button {
-    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0;
-    height: 56px; font: 700 22px/1 var(--font); color: var(--dev-key-text);
-    background: var(--dev-key); border: 1px solid var(--dev-key-edge); border-radius: 8px;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15), 0 4px 0 var(--dev-key-edge), 0 6px 8px rgba(0, 0, 0, 0.4);
-    transition: transform 0.05s, box-shadow 0.05s;
-}
-.keys button small { font: 600 9px/1.4 var(--font); letter-spacing: 0.18em; opacity: 0.6; }
-.keys button:hover { color: #fff; filter: brightness(1.18); border-color: var(--dev-key-edge); background: var(--dev-key); }
-.keys button:active, .keys button.pressed { transform: translateY(3px); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 1px 0 var(--dev-key-edge); }
-.keys .clear { background: linear-gradient(#9b3030, #6d1f1f); font-size: 14px; letter-spacing: 0.06em; }
-.keys .enter { background: linear-gradient(#3c8a45, #25602c); font-size: 14px; letter-spacing: 0.06em; color: #fff; }
-.keys .clear:hover { background: linear-gradient(#9b3030, #6d1f1f); }
-.keys .enter:hover { background: linear-gradient(#3c8a45, #25602c); }
-
-/* Thermite: the charge's control box, a grid of pads that glow hot */
-.thermite-dev { display: flex; flex-direction: column; align-items: center; gap: 12px; }
-.dev-top { display: flex; justify-content: space-between; align-items: center; width: 100%; padding: 0 4px; }
-.thermite-dev .screen { padding: 12px; background: #0b0c0e; }
-.grid { display: grid; gap: 6px; width: 330px; aspect-ratio: 1; }
-.cell {
-    background: radial-gradient(circle at 50% 40%, #2a2d33, #17191d); border: 1px solid #050506; border-radius: 3px; cursor: pointer;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06); transition: background 0.12s, box-shadow 0.12s;
-}
-.cell:hover { box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.4); }
-.cell.lit { background: radial-gradient(circle at 50% 45%, #fff6d0, var(--heat) 55%, #a8420c); box-shadow: 0 0 14px var(--heat); }
-.cell.hit { background: radial-gradient(circle at 50% 45%, #e6ffe6, var(--good) 60%, #2f6e2f); box-shadow: 0 0 10px var(--good); }
-.cell.miss { background: radial-gradient(circle at 50% 45%, #ffd6d6, var(--bad) 60%, #7a1c1c); box-shadow: 0 0 10px var(--bad); }
-
-/* Wires: a junction box with brass terminals, and the clues on a taped note */
-.wires { display: grid; grid-template-columns: 1fr 230px; gap: 26px; width: 100%; align-items: center; }
-.wire-box {
-    position: relative; display: flex; flex-direction: column; gap: 16px; padding: 34px 30px 26px;
-    background: var(--box); border: 2px solid var(--dev-edge); border-radius: 8px;
-    box-shadow: inset 0 1px 0 var(--dev-shine), 0 10px 26px rgba(0, 0, 0, 0.55);
-}
-/* the hazard stripe along the top of the box */
-.wire-box::before {
-    content: ""; position: absolute; top: 10px; left: 26px; right: 26px; height: 8px; border-radius: 2px;
-    background: repeating-linear-gradient(-45deg, #f0c21a 0 8px, #16171a 8px 16px); opacity: 0.9;
-}
-/* the inside of the box, where the wires run */
-.wire-inside { display: flex; flex-direction: column; gap: 16px; padding: 16px 22px; background: var(--box-inside); border-radius: 4px; box-shadow: inset 0 3px 10px rgba(0, 0, 0, 0.7); }
-.wire {
-    position: relative; height: 16px; border-radius: 8px; cursor: pointer;
-    box-shadow: inset 0 3px 2px rgba(255, 255, 255, 0.35), inset 0 -4px 3px rgba(0, 0, 0, 0.4), 0 3px 4px rgba(0, 0, 0, 0.5);
-}
-/* brass terminals at both ends */
-.wire::before, .wire::after {
-    content: ""; position: absolute; top: -5px; width: 16px; height: 26px; border-radius: 3px;
-    background: radial-gradient(circle at 50% 50%, #3b2f18 0 3px, transparent 3.5px), linear-gradient(90deg, #8a6d2f, #e2c27a 45%, #8a6d2f);
-    box-shadow: 0 2px 3px rgba(0, 0, 0, 0.6);
-}
-.wire::before { left: -12px; }
-.wire::after { right: -12px; }
-.wire:hover { outline: 2px solid rgba(255, 255, 255, 0.8); outline-offset: 4px; }
-.wire-label { position: absolute; left: 20px; top: 50%; transform: translateY(-50%); font: 700 10px var(--title-font); letter-spacing: 0.12em; text-transform: uppercase; color: #fff; text-shadow: 0 0 3px #000, 0 0 2px #000; pointer-events: none; }
-/* A pattern per colour, so the wires differ without colour too */
-.wire-red { background-image: repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.28) 0 3px, transparent 3px 14px); }
-.wire-blue { background-image: repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.25) 0 3px, transparent 3px 10px); }
-.wire-yellow { background-image: radial-gradient(rgba(0, 0, 0, 0.35) 2px, transparent 2.5px); background-size: 10px 16px; }
-.wire-green { background-image: repeating-linear-gradient(-45deg, rgba(0, 0, 0, 0.3) 0 3px, transparent 3px 10px); }
-.wire-white { background-image: linear-gradient(transparent 6px, rgba(0, 0, 0, 0.3) 6px 10px, transparent 10px); }
-.wire-black { background-image: repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.3) 0 8px, transparent 8px 16px); }
-.wire-orange { background-image: repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.3) 0 1px, transparent 1px 5px); }
-.wire-purple { background-image: repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.28) 0 6px, transparent 6px 12px); }
+/* Wires */
+.c-cavity { fill: #3a3e44; stroke: rgba(0, 0, 0, 0.35); stroke-width: 3; }
+.c-terminal { fill: #8b9096; stroke: #5f646a; }
+.c-sleeve { fill: #f2f2ee; pointer-events: none; }
+.t-sleeve { fill: #2a2d31; pointer-events: none; }
+.c-cut-gap { fill: #3a3e44; }
+.c-copper { fill: #c7773e; }
+.wire:hover .c-insulation { stroke: #fff; stroke-width: 2; }
 .wire.cut { cursor: default; }
-.wire.cut .wire-label { opacity: 0.6; }
-/* the cut: a gap with the copper showing at both ends */
-.wire.cut > .gap { position: absolute; top: -4px; bottom: -4px; left: 46%; width: 9%; background: var(--box-inside); border-left: 3px solid #d08a4a; border-right: 3px solid #d08a4a; }
-.wire.cut:hover { outline: none; }
-.wire.wrong { outline: 2px solid var(--bad); outline-offset: 4px; }
-.clues {
-    position: relative; margin: 0; padding: 22px 18px 16px 38px;
-    font: calc(15px * var(--text-scale))/26px var(--hand-font); color: var(--ink);
-    background: repeating-linear-gradient(transparent 0 25px, rgba(60, 90, 160, 0.22) 25px 26px) 0 20px / 100% 26px, var(--paper);
-    transform: rotate(-2deg);
-    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.5);
+.wire.cut .c-insulation { stroke: none; }
+.wire.wrong .c-insulation { stroke: var(--bad); stroke-width: 3; }
+.note {
+    width: 240px; padding: 18px 18px 20px 20px; transform: rotate(-2.5deg); color: #23262b;
+    font: calc(16px * var(--text-scale))/1.7 "Segoe Print", "Bradley Hand", cursive; background: #f6e8a6;
+    box-shadow: 0 10px 18px rgba(0, 0, 0, 0.35), inset 0 -18px 24px -18px rgba(0, 0, 0, 0.12);
 }
-/* a piece of tape */
-.clues::before { content: ""; position: absolute; top: -10px; left: 50%; width: 80px; height: 22px; margin-left: -40px; background: rgba(246, 242, 226, 0.82); transform: rotate(3deg); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2); }
-.clues li { width: fit-content; }
-.clues li.current { font-weight: 700; background: linear-gradient(transparent 55%, rgba(255, 214, 0, 0.6) 55%, rgba(255, 214, 0, 0.6) 90%, transparent 90%); }
-.clues li.done { opacity: 0.55; text-decoration: line-through; text-decoration-thickness: 2px; }
+.note ol { margin: 0; padding-left: 20px; }
+.note li.current { font-weight: 700; }
+.note li.done { text-decoration: line-through; opacity: 0.55; }
 
-/* Lockpick: a brass lock cylinder with its pins, and the pick in the keyway below */
-.lock { width: 100%; display: flex; flex-direction: column; gap: 14px; align-items: center; }
-.lock-dev { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 22px 28px 20px; }
-.cylinder {
-    display: flex; gap: 16px; padding: 0 26px 10px; border-radius: 6px 6px 40px 40px;
-    background: linear-gradient(90deg, #7d6431, #e0c27c 40%, #b3934d 60%, #6d5528);
-    border: 2px solid #3d2f14; box-shadow: inset 0 -6px 10px rgba(0, 0, 0, 0.35), 0 6px 14px rgba(0, 0, 0, 0.5);
+/* Lockpick */
+.c-shear { stroke: #6f5a2a; stroke-width: 1.5; opacity: 0.6; }
+.c-chamber { fill: #2a2c30; }
+.c-spring { stroke: #aeb3b9; stroke-width: 2; fill: none; }
+.c-pin-steel { fill: var(--steel); }
+.c-pin-brass { fill: var(--brass-h); }
+.c-current { fill: none; stroke: #fff; stroke-width: 1.5; stroke-dasharray: 4 3; }
+.c-keyway { fill: #231f17; opacity: 0.85; }
+.c-pick { stroke: #dfe3e7; stroke-width: 5; fill: none; stroke-linecap: round; }
+.c-tension { stroke: #9aa0a6; stroke-width: 7; fill: none; }
+.c-track { fill: #17181b; }
+.c-zone { fill: var(--gold); opacity: 0.55; }
+.c-zone-edge { stroke: var(--gold); stroke-width: 2; }
+.c-marker { fill: #fff; }
+.t-under { fill: rgba(255, 255, 255, 0.75); }
+
+/* Hotwire */
+.c-dash { fill: #1c1e21; }
+.c-dash-lip { fill: #2a2d31; }
+.c-keyhole { fill: #2a2c30; }
+.c-sleeve-tube { fill: #101113; }
+.c-rib { stroke: #2c2e32; stroke-width: 3; }
+.c-strip { fill: #0f1012; }
+.c-cable { stroke-width: 12; fill: none; stroke-linecap: round; }
+.c-cable-shine { stroke: #fff; stroke-opacity: 0.22; stroke-width: 3; fill: none; pointer-events: none; }
+.c-outline { stroke: transparent; stroke-width: 20; fill: none; stroke-linecap: round; }
+.hw-wire:hover .c-outline { stroke: rgba(255, 255, 255, 0.25); }
+.hw-wire.picked .c-outline { stroke: #fff; }
+.c-bare { stroke: #c7773e; stroke-width: 5; stroke-linecap: round; }
+.c-label { fill: #f2f0ea; }
+.c-label-dark { fill: #34373c; }
+.c-brass-screw { fill: var(--brass); stroke: #7a6230; }
+.c-brass-slot { stroke: #6a5426; stroke-width: 2; }
+.t-label { pointer-events: none; }
+.hw-term:hover rect { stroke: #fff; stroke-width: 2; }
+.hw-term.connected { cursor: default; }
+.hw-term.connected rect { stroke: var(--good); stroke-width: 2; }
+.hw-term.spark rect { animation: spark 0.35s; }
+@keyframes spark { 30% { stroke: var(--bad); stroke-width: 5; } }
+
+/* Laser grid: a tablet */
+.tablet {
+    position: relative; padding: 12px; border-radius: 30px; border: 1px solid #7d8288;
+    background: linear-gradient(#dcdfe2, #a7abb0); box-shadow: 0 18px 30px rgba(0, 0, 0, 0.45);
 }
-.pins { display: flex; gap: 14px; }
-/* a pin: a spring on top, the steel pin under it; a set pin sits higher */
-.pin {
-    position: relative; width: 20px; height: 74px; margin-top: 0; border-radius: 0 0 8px 8px;
-    background: repeating-linear-gradient(#b9bec6 0 3px, #5f646c 3px 5px) top / 100% 26px no-repeat, linear-gradient(90deg, #6f757e, #dfe3e8 45%, #7b818a);
-    transition: transform 0.15s;
-}
-.pin.current { box-shadow: 0 0 0 2px #fff, 0 0 12px rgba(255, 255, 255, 0.6); }
-.pin.set { transform: translateY(-12px); background: repeating-linear-gradient(#b9bec6 0 2px, #5f646c 2px 3px) top / 100% 14px no-repeat, linear-gradient(90deg, #2f6e2f, var(--good) 45%, #2f6e2f); }
-.track {
-    position: relative; width: 100%; height: 40px; cursor: pointer; overflow: hidden; border-radius: 20px;
-    background: repeating-linear-gradient(90deg, transparent 0 23px, rgba(255, 255, 255, 0.07) 23px 24px), #0d0e11;
-    border: 2px solid var(--dev-edge); box-shadow: inset 0 3px 8px rgba(0, 0, 0, 0.8);
-}
-.zone { position: absolute; top: 0; bottom: 0; border-left: 2px solid var(--gold); border-right: 2px solid var(--gold); }
-.zone::before { content: ""; position: absolute; inset: 0; background: var(--gold); opacity: 0.3; }
-/* the pick: a steel needle with a hook at the top */
-.pick { position: absolute; top: 3px; bottom: 3px; width: 4px; margin-left: -2px; border-radius: 2px; background: linear-gradient(90deg, #8d939c, #fff, #8d939c); box-shadow: 0 0 6px rgba(255, 255, 255, 0.6); }
-.pick::before { content: ""; position: absolute; top: -1px; left: -3px; width: 10px; height: 6px; border-radius: 3px; background: #dfe3e8; }
+.tablet-glass { padding: 22px 32px; border-radius: 20px; background: #0b0c0e; }
+.tablet-cam { position: absolute; top: 18px; left: 50%; width: 6px; height: 6px; margin-left: -3px; border-radius: 50%; background: #2a2d31; }
+canvas.room { display: block; width: 612px; height: auto; border-radius: 3px; }
+
+/* Key filing */
+.c-vice { fill: var(--vice); }
+.c-key-brass { fill: var(--brass); stroke: #8c7236; stroke-width: 2; stroke-linejoin: round; }
+.c-key-hole { fill: #2b2d31; stroke: #8c7236; stroke-width: 2; }
+.c-groove { stroke: #8c7236; stroke-width: 3; opacity: 0.5; }
+.c-cut-band { fill: #000; opacity: 0.1; }
+.c-cut-line { stroke: #1b1d20; stroke-width: 1.6; }
+.c-cut-ok { fill: var(--good); opacity: 0; transition: opacity 0.15s; }
+.c-cut-ok.on { opacity: 1; }
+.c-hit { fill: transparent; }
+.c-file { fill: #9ea3a9; }
+.c-file-teeth { stroke: #6c7177; stroke-width: 1; }
+.c-handle { fill: var(--wood); }
+.file { pointer-events: none; }
+.filing { fill: #c9a24e; animation: fall 0.65s ease-in forwards; }
+@keyframes fall { to { transform: translate(var(--dx), 38px); opacity: 0; } }
+
+/* Tracker sweep: the car and the RF detector */
+canvas.car { display: block; width: 560px; height: auto; cursor: crosshair; filter: drop-shadow(0 18px 24px rgba(0, 0, 0, 0.45)); }
+.c-antenna { fill: #2a2c30; }
+.c-bar { fill: #2a2c30; }
+.c-bar.on.lo { fill: var(--good); }
+.c-bar.on.mid { fill: #e3a52b; }
+.c-bar.on.hi { fill: #d23b2f; }
+.c-knob { fill: #2a2d31; stroke: #111; }
 
 /* Fingerprint: like the Casino heist's fingerprint cloner, a whole screen of its own: the digital
    timer and lives on top, the components on the left (dim until picked), the print on the right in 4
    bands, the prints and the scramble bar at the bottom, and a pixel grid over it all */
-.panel.game-fingerprint { width: 860px; }
-.panel.game-fingerprint #mg-time, .panel.game-fingerprint #mg-status, .panel.game-fingerprint > .timer { display: none; }
-.panel.game-fingerprint header { margin-bottom: 12px; }
+.panel.game-fingerprint .hud { display: none; }
 .fp-screen {
-    position: relative; width: 100%; display: flex; flex-direction: column; gap: 16px; padding: 18px 26px 20px;
-    color: var(--print); font-family: var(--title-font); text-transform: uppercase;
+    position: relative; width: 820px; display: flex; flex-direction: column; gap: 16px; padding: 18px 26px 20px;
+    color: var(--print); font-family: var(--font); text-transform: uppercase;
     background: radial-gradient(ellipse at 60% 40%, #10212b, #05090d 75%);
     border: 1px solid rgba(223, 244, 255, 0.25); border-radius: 4px; box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
     overflow: hidden; text-shadow: none;
@@ -406,7 +334,7 @@ button:hover { background: #f2f3f5; border-color: #f2f3f5; color: #111; }
 .fp-window-bar { display: flex; gap: 3px; }
 .fp-window-bar span { width: 11px; height: 26px; background: rgba(223, 244, 255, 0.12); }
 .fp-window-bar span.on { background: var(--print); box-shadow: 0 0 6px var(--print); }
-.fp-window-text { min-height: 26px; font: 700 22px var(--title-font); letter-spacing: 0.12em; }
+.fp-window-text { min-height: 26px; font: 700 22px var(--font); letter-spacing: 0.12em; }
 .fp-window.good { border-color: var(--good); }
 .fp-window.good .fp-window-text { color: var(--good); }
 .fp-window.bad { border-color: var(--bad); }
@@ -415,7 +343,7 @@ button:hover { background: #f2f3f5; border-color: #f2f3f5; color: #111; }
 .fp-prints { display: flex; gap: 10px; }
 .fp-slot {
     display: flex; align-items: center; justify-content: center; width: 38px; height: 50px;
-    font: 700 18px var(--title-font); border: 1px solid rgba(223, 244, 255, 0.2); color: rgba(223, 244, 255, 0.3);
+    font: 700 18px var(--font); border: 1px solid rgba(223, 244, 255, 0.2); color: rgba(223, 244, 255, 0.3);
 }
 .fp-slot.current { border: 2px solid #fff; color: #fff; box-shadow: 0 0 10px rgba(143, 211, 255, 0.5); }
 .fp-slot.done { background: var(--print); color: #05090d; border-color: var(--print); box-shadow: 0 0 10px var(--print); }
@@ -424,271 +352,93 @@ button:hover { background: #f2f3f5; border-color: #f2f3f5; color: #111; }
 .fp-scramble span.on { background: var(--print); }
 .game-fingerprint .flash { min-height: 22px; margin-top: 6px; color: var(--bad); }
 
-/* Hotwire: under the steering column: a wiring harness on the left, the ignition terminals on the right */
-.hw-wrap { width: 100%; display: flex; flex-direction: column; gap: 10px; }
-.hotwire {
-    position: relative; display: grid; grid-template-columns: 210px 1fr 170px; align-items: center; width: 100%; min-height: 250px;
-    padding: 18px 20px 18px 0; border-radius: 10px;
-    background: repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.025) 0 2px, transparent 2px 5px), linear-gradient(160deg, #26282c, #141518);
-    border: 2px solid var(--dev-edge); box-shadow: inset 0 2px 12px rgba(0, 0, 0, 0.7);
-}
-/* the harness: the wires come out of a black sleeve */
-.hw-col:first-child { position: relative; padding-left: 26px; }
-.hw-col:first-child::before { content: ""; position: absolute; left: 0; top: -12px; bottom: -12px; width: 22px; border-radius: 0 10px 10px 0; background: repeating-linear-gradient(0deg, #1a1a1c 0 4px, #0b0b0c 4px 6px); box-shadow: 2px 0 6px rgba(0, 0, 0, 0.6); }
-.hw-col { display: flex; flex-direction: column; gap: 18px; }
-.hw-col:last-child { grid-column: 3; }
-.hw-wire { height: 18px; border-radius: 0 9px 9px 0; }
-.hw-wire::before { display: none; }
-/* a bare copper end */
-.hw-wire::after { right: -14px; top: 5px; width: 16px; height: 8px; border-radius: 0 4px 4px 0; background: linear-gradient(#f0b27a, #b86b2e); box-shadow: none; }
-.hw-wire.picked { outline: 2px solid #fff; outline-offset: 4px; }
-.hw-wire.connected { cursor: default; opacity: 0.85; }
-.hw-lines { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
-.hw-lines line { stroke-width: 6; stroke-linecap: round; }
-/* a terminal: a screw post on a metal plate with its name stamped in */
-.hw-term {
-    position: relative; padding: 8px 10px 8px 30px; text-align: center; font: 700 calc(15px * var(--text-scale)) var(--title-font); letter-spacing: 0.08em;
-    background: linear-gradient(90deg, #4a4e55 0 28px, #d9d4c5 28px); border: 2px solid #111; border-radius: 4px; cursor: pointer;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 3px 6px rgba(0, 0, 0, 0.5);
-}
-.hw-term::before { content: ""; position: absolute; left: 8px; top: 50%; width: 14px; height: 14px; margin-top: -7px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #fff0c0, #c9a24e 55%, #6b5222); }
-.hw-term.ink-dark { text-shadow: none; }
-.hw-term.ink-light { text-shadow: 0 0 3px rgba(0, 0, 0, 0.9); }
-.hw-term:hover { border-color: #fff; }
-.hw-term.connected { border-color: var(--good); cursor: default; }
-.hw-term.spark { animation: spark 0.35s; }
-@keyframes spark { 0%, 100% { border-color: #111; } 30% { border-color: var(--bad); box-shadow: 0 0 16px var(--bad), 0 0 30px #fff6c2; } }
-
-/* Laser grid and tracker sweep: on a tablet */
-.room-wrap { display: flex; flex-direction: column; align-items: center; gap: 10px; width: 100%; }
-.tablet {
-    position: relative; width: 100%; padding: 16px 30px; border-radius: 22px;
-    background: linear-gradient(160deg, #2b2e34, #111214); border: 2px solid #050506;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15), 0 12px 28px rgba(0, 0, 0, 0.6);
-}
-/* the camera and the home button */
-.tablet::before { content: ""; position: absolute; left: 12px; top: 50%; width: 7px; height: 7px; margin-top: -4px; border-radius: 50%; background: radial-gradient(circle at 40% 40%, #4b5a73, #0a0c10); }
-.tablet::after { content: ""; position: absolute; right: 9px; top: 50%; width: 12px; height: 12px; margin-top: -6px; border-radius: 50%; border: 1.5px solid rgba(255, 255, 255, 0.18); }
-.tablet .tablet-body { display: flex; flex-direction: column; gap: 8px; }
-canvas.room, canvas.car { display: block; width: 100%; height: auto; border-radius: 6px; box-shadow: 0 0 0 2px #000; }
-canvas.car { cursor: crosshair; }
-.meter { position: relative; width: 100%; height: 22px; background: #0a0b0d; border: 1px solid #000; border-radius: 4px; overflow: hidden; }
-.meter-fill { height: 100%; width: 0; background: linear-gradient(90deg, var(--good), var(--gold) 70%, var(--bad)); background-size: 624px 100%; transition: width 0.08s; }
-.meter-label { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font: 700 12px var(--title-font); letter-spacing: 0.08em; text-transform: uppercase; text-shadow: 0 0 3px #000; }
-
-/* Key filing: the key held in a vice on a workbench */
-.key-wrap { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 6px; }
-.bench {
-    width: 100%; padding: 16px 20px 8px; border-radius: 8px;
-    background: repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.12) 0 2px, transparent 2px 38px), linear-gradient(#5a4130, #3e2c20);
-    border: 2px solid #1f160f; box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.55);
-}
-.key-svg { width: 100%; height: auto; overflow: visible; }
-.vice { fill: url(#vice-metal); stroke: #111; stroke-width: 2; }
-.key-metal { fill: var(--key-metal); stroke: var(--key-edge); stroke-width: 2.5; stroke-linejoin: round; }
-.key-hole { fill: #3e2c20; stroke: var(--key-edge); stroke-width: 2.5; }
-.key-groove { stroke: var(--key-edge); stroke-width: 3; opacity: 0.55; stroke-linecap: round; }
-.cut-select { fill: transparent; stroke: transparent; stroke-width: 2; }
-.cut-select.on { stroke: #fff; fill: rgba(255, 255, 255, 0.05); }
-.cut-band { fill: var(--good); opacity: 0.22; }
-.cut-line { stroke: var(--good); stroke-width: 2; stroke-dasharray: 4 3; }
-.cut-ok { fill: var(--good); opacity: 0; transition: opacity 0.15s; }
-.cut-ok.on { opacity: 1; }
-.cut-hit { fill: transparent; cursor: pointer; }
-.filing { fill: var(--key-edge); animation: fall 0.65s ease-in forwards; }
-@keyframes fall { to { transform: translate(var(--dx), 38px); opacity: 0; } }
-
 /* ---------------------------------------------------------------------------------------------
-   STYLES (MG.Style). Each one sets its own colours; MG.Theme colours still win over these.
+   Test menu (/minigame): flat, like GTA's menus: a dark box, lines that turn white when chosen
    --------------------------------------------------------------------------------------------- */
-
-/* Terminal: green text on black, scanlines and a glow, like an old computer */
-.style-terminal {
-    --bg: rgba(2, 10, 4, 0.97);
-    --panel: #051208;
-    --line: #10421f;
-    --text: #b8ffc8;
-    --muted: #4fa566;
-    --brand: #33ff66;
-    --good: #33ff66;
-    --bad: #ff3b3b;
-    --gold: #d4ff3a;
-    --font: "Consolas", "Lucida Console", "Courier New", monospace;
-    --radius: 2px;
-    --floor: #020803;
-    --floor-line: rgba(51, 255, 102, 0.08);
-    --car-wheel: #041a0a;
-    --car-body: #062d12;
-    --car-edge: #33ff66;
-    --car-glass: #031006;
-    --key-metal: rgba(51, 255, 102, 0.08);
-    --key-edge: #33ff66;
-    --title-font: var(--font);
-    --timer: var(--brand);
-    --heat: var(--brand);
-    --scan: var(--brand);
-    --print: var(--brand);
-    --dev-case: #031007;
-    --dev-edge: #1c7a3a;
-    --dev-shine: transparent;
-    --screen-bg: #010601;
-    --screen-text: #33ff66;
-    --screen-glow: 0 0 14px rgba(51, 255, 102, 0.3);
-    --dev-key: transparent;
-    --dev-key-text: #b8ffc8;
-    --dev-key-edge: #10421f;
-    --paper: #031007;
-    --ink: #b8ffc8;
-    --hand-font: var(--font);
-    --box: #031007;
-    --box-inside: #010401;
-}
-.style-terminal .screw, .style-terminal .clues::before, .style-terminal .tablet::before, .style-terminal .tablet::after { display: none; }
-.style-terminal .cell { background: #031007; border-color: var(--line); }
-.style-terminal .cylinder, .style-terminal .hotwire, .style-terminal .tablet, .style-terminal .bench, .style-terminal .hw-term { background: #031007; border: 1px solid var(--line); border-radius: 0; box-shadow: none; }
-.style-terminal .pin { background: #062d12; border: 1px solid var(--brand); }
-.style-terminal .pin.set { background: var(--brand); }
-.style-terminal .track { background: #010401; border-radius: 0; }
-.style-terminal .fp-screen { background: #010401; border-color: var(--line); border-radius: 0; }
-.style-terminal .meter-fill { background: var(--brand); }
-.style-terminal .key-hole { fill: #031007; }
-.style-terminal .hw-term.ink-dark { text-shadow: 0 0 3px rgba(255, 255, 255, 0.95), 0 0 1px #fff; }
-.style-terminal kbd { color: #020803; background: var(--brand); box-shadow: none; }
-.style-terminal .keys .clear { background: transparent; border-color: var(--bad); color: var(--bad); }
-.style-terminal .code { text-shadow: 0 0 8px var(--brand); }
-.style-terminal .clues { transform: none; border: 1px dashed var(--line); box-shadow: none; background: var(--paper); }
-.style-terminal .clues li.current { background: none; color: var(--brand); }
-.style-terminal .menu-panel header { background: none; border-bottom: 1px solid var(--brand); }
-.style-terminal header { background: none; }
-.style-terminal footer { background: none; border-top: 1px solid var(--line); }
-.style-terminal button:hover, .style-terminal .seg button.on { background: rgba(51, 255, 102, 0.12); border-color: var(--brand); color: var(--brand); }
-.style-terminal .panel { border: 1px solid var(--brand); box-shadow: 0 0 28px rgba(51, 255, 102, 0.22), inset 0 0 40px rgba(51, 255, 102, 0.05); }
-.style-terminal .panel::after {
-    content: ""; position: absolute; inset: 0; pointer-events: none; border-radius: var(--radius);
-    background: repeating-linear-gradient(transparent 0 2px, rgba(0, 0, 0, 0.28) 2px 3px);
-}
-.style-terminal .panel, .style-terminal button { text-shadow: 0 0 6px rgba(51, 255, 102, 0.55); }
-.style-terminal h1 { text-transform: uppercase; letter-spacing: 0.12em; }
-.style-terminal h1::before { content: "> "; color: var(--brand); }
-.style-terminal h1::after { content: "_"; animation: caret 1s steps(1) infinite; }
-@keyframes caret { 50% { opacity: 0; } }
-.style-terminal .timer { border-radius: 0; height: 6px; }
-.style-terminal #mg-timer { background: repeating-linear-gradient(90deg, var(--brand) 0 8px, transparent 8px 10px); }
-.style-terminal button { background: transparent; border-color: var(--line); border-radius: 0; }
-.style-terminal button:hover { border-color: var(--brand); background: rgba(51, 255, 102, 0.08); }
-.style-terminal .keys .enter { background: var(--brand); color: #020803; text-shadow: none; }
-.style-terminal .cell, .style-terminal .wire-box, .style-terminal .track, .style-terminal .hw-term,
-.style-terminal .meter, .style-terminal canvas { border-radius: 0; }
-.style-terminal #mg-result { background: rgba(2, 10, 4, 0.92); text-transform: uppercase; letter-spacing: 0.2em; }
-
-/* Glass: a frosted panel over the game, soft edges and gradients */
-.style-glass {
-    --bg: rgba(22, 26, 38, 0.55);
-    --panel: rgba(255, 255, 255, 0.06);
-    --line: rgba(255, 255, 255, 0.14);
-    --text: #f3f5fa;
-    --muted: #b7bfd1;
-    --brand: #7c8cff;
-    --good: #4ade9c;
-    --bad: #ff6b81;
-    --gold: #ffd166;
-    --font: "Segoe UI", system-ui, -apple-system, sans-serif;
-    --radius: 20px;
-    --floor: rgba(10, 13, 22, 0.55);
-    --floor-line: rgba(255, 255, 255, 0.06);
-    --car-wheel: #11141c;
-    --car-body: #353b4a;
-    --car-edge: rgba(255, 255, 255, 0.4);
-    --car-glass: #1c202c;
-    --key-metal: #d5dbe7; /* silver */
-    --key-edge: #8f99ad;
-    --title-font: var(--font);
-    --timer: var(--brand);
-    --heat: #c084fc;
-    --scan: var(--brand);
-    --dev-case: rgba(255, 255, 255, 0.07);
-    --dev-edge: rgba(255, 255, 255, 0.18);
-    --dev-shine: rgba(255, 255, 255, 0.2);
-    --screen-bg: rgba(8, 11, 20, 0.6);
-    --screen-text: #f3f5fa;
-    --dev-key: rgba(255, 255, 255, 0.09);
-    --dev-key-text: #f3f5fa;
-    --dev-key-edge: rgba(0, 0, 0, 0.3);
-    --box: rgba(255, 255, 255, 0.08);
-    --box-inside: rgba(0, 0, 0, 0.35);
-    --paper: rgba(255, 255, 255, 0.88);
-}
-.style-glass .screw { display: none; }
-.style-glass .cell { background: rgba(255, 255, 255, 0.07); border-color: rgba(255, 255, 255, 0.12); border-radius: 8px; }
-.style-glass .hotwire, .style-glass .tablet, .style-glass .bench { background: rgba(255, 255, 255, 0.06); border-color: rgba(255, 255, 255, 0.16); border-radius: 18px; }
-.style-glass .key-hole { fill: rgba(30, 34, 48, 0.9); }
-.style-glass .device, .style-glass .wire-box { border-radius: 22px; backdrop-filter: blur(10px); }
-.style-glass .keys button { border-radius: 14px; }
-.style-glass .keys .clear { background: rgba(255, 107, 129, 0.35); }
-.style-glass header, .style-glass footer { background: rgba(255, 255, 255, 0.04); }
-.style-glass .menu-panel header { background: linear-gradient(120deg, var(--brand), #c084fc); }
-.style-glass h1 { text-transform: none; font-weight: 600; letter-spacing: 0; }
-.style-glass .panel {
-    border: 1px solid rgba(255, 255, 255, 0.18); border-top: 1px solid rgba(255, 255, 255, 0.32);
-    backdrop-filter: blur(22px) saturate(150%); -webkit-backdrop-filter: blur(22px) saturate(150%);
-    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.12);
-}
-.style-glass .timer { height: 6px; border-radius: 3px; background: rgba(255, 255, 255, 0.1); }
-.style-glass #mg-timer { background: linear-gradient(90deg, var(--brand), #c084fc); border-radius: 3px; }
-.style-glass button { background: rgba(255, 255, 255, 0.08); border-color: rgba(255, 255, 255, 0.16); border-radius: 12px; }
-.style-glass .keys .enter { background: linear-gradient(135deg, var(--brand), #c084fc); border: 0; color: #fff; }
-.style-glass .cell, .style-glass .hw-term { border-radius: 10px; }
-.style-glass .wire-box, .style-glass .track, .style-glass .meter, .style-glass canvas { border-radius: 14px; }
-.style-glass #mg-result { border-radius: var(--radius); background: rgba(22, 26, 38, 0.7); backdrop-filter: blur(8px); }
-
-/* Default look: no window behind the game. The title, timer and hints sit on the game itself with a
-   shadow (like GTA's HUD text); each device and the menu's lines keep their own body. */
-.style-default .panel, .style-default .menu-panel { background: transparent; box-shadow: none; }
-.style-default header, .style-default footer, .style-default .menu-hint { background: none; }
-.style-default { --muted: #c9ced6; }
-.style-default .panel { text-shadow: 0 1px 2px rgba(0, 0, 0, 0.95), 0 0 10px rgba(0, 0, 0, 0.7); }
-.style-default .device, .style-default .wire-box, .style-default .clues, .style-default .hotwire,
-.style-default .tablet, .style-default .bench, .style-default button, .style-default kbd { text-shadow: none; }
-.style-default .timer { background: rgba(0, 0, 0, 0.35); }
-.style-default #mg-timer { box-shadow: 0 0 6px rgba(0, 0, 0, 0.6); }
-.style-default .dot { box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6); }
-.style-default .dot.lost { border-color: rgba(255, 255, 255, 0.6); box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.5); }
-.style-default #mg-intro-howto, .style-default #mg-result-sub { font-weight: 600; }
-/* the end: big text over the game, only a soft shade right behind it */
-.style-default #mg-result { background: radial-gradient(ellipse 60% 32% at center, rgba(0, 0, 0, 0.55), transparent); }
-.style-default #mg-result-title { text-shadow: 0 2px 0 rgba(0, 0, 0, 0.8), 0 0 18px rgba(0, 0, 0, 0.8); }
-.style-default .menu-panel header { background: none; }
-.style-default .menu-card { background: rgba(0, 0, 0, 0.5); }
-.style-default .menu-card:hover { background: #f2f3f5; }
-.style-default .seg button:not(.on), .style-default .menu-close, .style-default .menu-tracker button { background: rgba(0, 0, 0, 0.5); }
-.style-default .menu-tracker { border-top-color: rgba(255, 255, 255, 0.25); }
-.style-default .fx-pulse { animation: none; }
-
-/* Test menu (/minigame): like GTA's menus, a banner, then lines that turn white when chosen */
-#mg-menu { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: transparent; }
-.menu-panel { width: 780px; animation: open 0.22s ease-out; }
-.menu-panel header {
-    align-items: flex-end; padding: 22px 24px 16px;
-    background: linear-gradient(120deg, #2a2d33, #0d0e11); border-bottom: 2px solid var(--brand);
-}
-.menu-panel h1 { font-size: calc(40px * var(--text-scale)); text-shadow: 0 2px 0 rgba(0, 0, 0, 0.35); }
-.menu-close { padding: 5px 12px; font: 700 13px var(--title-font); text-transform: uppercase; letter-spacing: 0.06em; background: rgba(0, 0, 0, 0.35); border-color: transparent; }
-.menu-hint { margin: 0 -24px 14px; padding: 8px 24px; background: rgba(0, 0, 0, 0.6); color: var(--muted); font: 500 calc(13px * var(--text-scale)) var(--title-font); text-transform: uppercase; letter-spacing: 0.06em; }
+#mg-menu { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; }
+#mg-menu .menu-panel { display: block; width: 760px; padding: 0 22px 14px; background: var(--bg); animation: open 0.2s ease-out; transform-origin: center; }
+#mg-menu header { display: flex; justify-content: space-between; align-items: center; margin: 0 -22px; padding: 16px 22px; border-bottom: 1px solid rgba(255, 255, 255, 0.12); }
+#mg-menu h1 { margin: 0; font-size: calc(17px * var(--text-scale)); font-weight: 600; letter-spacing: 0.3em; text-transform: uppercase; }
+#mg-menu footer { margin-top: 12px; font-size: calc(13px * var(--text-scale)); color: var(--muted); }
+#mg-menu button { font: inherit; color: var(--text); background: rgba(255, 255, 255, 0.07); border: 0; border-radius: 0; cursor: pointer; }
+#mg-menu button:hover, #mg-menu .seg button.on { background: var(--brand); color: #000; }
+.menu-close { padding: 6px 12px; font-size: calc(13px * var(--text-scale)); }
+.menu-hint { margin: 12px 0 14px; color: var(--muted); font-size: calc(13px * var(--text-scale)); }
 .menu-row { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
-.menu-label { min-width: 110px; color: var(--muted); font: 500 calc(13px * var(--text-scale)) var(--title-font); text-transform: uppercase; letter-spacing: 0.06em; }
-.seg { display: flex; gap: 4px; }
-.seg button { padding: 6px 16px; font: 500 calc(13px * var(--text-scale)) var(--title-font); text-transform: uppercase; letter-spacing: 0.05em; }
-.seg button.on { background: #f2f3f5; border-color: #f2f3f5; color: #111; }
-.menu-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin: 14px 0; }
-.menu-card { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; padding: 10px 12px; text-align: left; background: rgba(0, 0, 0, 0.35); }
-.menu-name { font: 700 calc(16px * var(--text-scale)) var(--title-font); text-transform: uppercase; letter-spacing: 0.04em; display: flex; align-items: center; gap: 6px; }
-.badge { font: 700 10px var(--title-font); padding: 0 5px; border-radius: 2px; border: 1px solid currentColor; opacity: 0.7; letter-spacing: 0.06em; }
+.menu-tracker .menu-label { min-width: 0; margin-right: 6px; }
+.menu-label { min-width: 110px; color: var(--muted); font-size: calc(12px * var(--text-scale)); letter-spacing: 0.15em; text-transform: uppercase; }
+.seg { display: flex; gap: 2px; }
+.seg button { padding: 7px 16px; font-size: calc(13px * var(--text-scale)); text-transform: capitalize; }
+.menu-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; margin: 14px 0; }
+.menu-card { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; padding: 10px 12px; text-align: left; }
+.menu-name { font-size: calc(15px * var(--text-scale)); font-weight: 600; display: flex; align-items: center; gap: 6px; }
+.badge { font-size: 10px; font-weight: 700; padding: 0 4px; border: 1px solid currentColor; opacity: 0.6; letter-spacing: 0.06em; }
 .menu-res { font-size: calc(12px * var(--text-scale)); color: var(--muted); }
 .menu-res.good { color: var(--good); }
 .menu-res.bad { color: var(--bad); }
-.menu-card:hover .menu-res { color: #333; }
-.menu-all { width: 100%; padding: 11px; font: 700 calc(16px * var(--text-scale)) var(--title-font); text-transform: uppercase; letter-spacing: 0.08em; background: #f2f3f5; border-color: #f2f3f5; color: #111; }
-.menu-all:hover { filter: brightness(0.85); }
-.menu-tracker { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 14px; padding-top: 12px; border-top: 1px solid rgba(255, 255, 255, 0.1); }
+.menu-card:hover .menu-res { color: #444; }
+#mg-menu .menu-all { width: 100%; padding: 11px; font-size: calc(14px * var(--text-scale)); font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase; background: var(--brand); color: #000; }
+#mg-menu .menu-all:hover { filter: brightness(0.85); }
+.menu-tracker { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 14px; padding-top: 12px; border-top: 1px solid rgba(255, 255, 255, 0.12); }
 .menu-tracker button { padding: 7px 12px; font-size: calc(13px * var(--text-scale)); }
-.style-terminal .menu-all { color: #020803; }
+
+/* ---------------------------------------------------------------------------------------------
+   STYLES (MG.Style). The default is above. MG.Theme colours still win over these.
+   --------------------------------------------------------------------------------------------- */
+
+/* Terminal: every object drawn as green lines on black, like an old computer */
+.style-terminal {
+    --font: Consolas, "Lucida Console", "Courier New", monospace;
+    --text: #b8ffc8;
+    --muted: #4fa566;
+    --brand: #33ff66;
+    --bg: rgba(2, 10, 4, 0.94);
+    --good: #33ff66;
+    --bad: #ff3b3b;
+    --gold: #d4ff3a;
+    --alu: #031007; --paint: #031007; --plastic: #031007; --keycap: #041a0a; --brass: #062d12; --brass-h: #062d12;
+    --steel: #0a3a18; --wood: #062d12; --vice: #041a0a;
+    --edge: #1c7a3a; --edge-dark: #1c7a3a; --recess: #010401; --display: #010401; --display-text: #33ff66;
+    --print-ink: #4fa566; --print-ink-light: #b8ffc8;
+    --floor: #020803; --floor-line: rgba(51, 255, 102, 0.08); --wall: #1c7a3a; --laser: #ff3b3b; --dot: #b8ffc8;
+    --car-body: #041a0a; --car-edge: #33ff66; --car-glass: #010401; --car-roof: #062d12; --car-wheel: #031007;
+    --scan: #33ff66; --print: #33ff66;
+}
+.style-terminal .thing { filter: drop-shadow(0 0 10px rgba(51, 255, 102, 0.18)); }
+.style-terminal .thing :is(.c-alu, .c-paint, .c-plastic, .c-steel, .c-brass, .c-key, .c-key-brass, .c-vice, .c-pad, .c-terminal, .c-label, .c-label-dark, .c-cavity, .c-dash, .c-strip) { stroke: #1c7a3a; stroke-width: 1.5; }
+.style-terminal .c-brush, .style-terminal .c-round, .style-terminal .c-key-side, .style-terminal .c-pad-side, .style-terminal .c-pad-shine { display: none; }
+.style-terminal :is(.t-key, .t-key-small, .t-sleeve, .t-print) { fill: #b8ffc8; }
+.style-terminal .t-label { fill: #b8ffc8 !important; }
+.style-terminal :is(.c-cavity, .c-dash, .c-dash-lip, .c-strip, .c-chamber, .c-keyway, .c-track, .c-cut-gap, .c-sleeve-tube, .c-label, .c-label-dark, .c-sleeve, .c-terminal, .c-screw) { fill: #010401; }
+.style-terminal .pad.lit .c-pad { fill: #33ff66; }
+.style-terminal .c-key.go, .style-terminal .c-key.stop { fill: var(--keycap); }
+.style-terminal .tablet { background: #031007; border-color: #1c7a3a; box-shadow: none; }
+.style-terminal .tablet-glass { background: #010401; }
+.style-terminal .note { transform: none; color: #b8ffc8; background: #031007; border: 1px dashed #1c7a3a; box-shadow: none; font-family: var(--font); }
+.style-terminal kbd { background: #33ff66; color: #020803; }
+.style-terminal .label, .style-terminal .hud { color: #b8ffc8; text-shadow: 0 0 6px rgba(51, 255, 102, 0.6), 0 1px 3px #000; }
+.style-terminal #mg-menu button:hover, .style-terminal #mg-menu .seg button.on, .style-terminal #mg-menu .menu-all { background: #33ff66; color: #020803; }
+.style-terminal .fp-screen { background: #010401; border-color: #1c7a3a; }
+
+/* Glass: frosted, see-through objects */
+.style-glass {
+    --text: #f3f5fa;
+    --muted: #b7bfd1;
+    --brand: #a5b4ff;
+    --bg: rgba(22, 26, 38, 0.6);
+    --good: #4ade9c;
+    --bad: #ff6b81;
+    --gold: #ffd166;
+    --alu: rgba(255, 255, 255, 0.16); --paint: rgba(255, 255, 255, 0.16); --plastic: rgba(20, 24, 34, 0.55);
+    --keycap: rgba(255, 255, 255, 0.22); --steel: rgba(255, 255, 255, 0.2);
+    --edge: rgba(255, 255, 255, 0.35); --edge-dark: rgba(255, 255, 255, 0.25); --recess: rgba(0, 0, 0, 0.35);
+    --display: rgba(0, 0, 0, 0.45); --display-text: #e6ecff; --print-ink: rgba(255, 255, 255, 0.6);
+    --floor: rgba(10, 13, 22, 0.7); --car-body: rgba(255, 255, 255, 0.28); --car-edge: rgba(255, 255, 255, 0.6); --car-roof: rgba(255, 255, 255, 0.18);
+    --scan: #a5b4ff;
+}
+.style-glass .thing { filter: drop-shadow(0 18px 30px rgba(0, 0, 0, 0.35)); }
+.style-glass .t-key { fill: #f3f5fa; }
+.style-glass .c-key-side, .style-glass .c-brush { display: none; }
+.style-glass .tablet { background: rgba(255, 255, 255, 0.16); border-color: rgba(255, 255, 255, 0.35); backdrop-filter: blur(14px); }
+.style-glass #mg-intro, .style-glass #mg-result, .style-glass #mg-menu .menu-panel { backdrop-filter: blur(18px); border-radius: 18px; }
+.style-glass .keybar { border-radius: 12px; backdrop-filter: blur(10px); }

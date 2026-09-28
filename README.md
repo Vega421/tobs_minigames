@@ -85,11 +85,11 @@ Every export, setting, event and command is in **[EXPORTS.md](EXPORTS.md)**, inc
 
 | Style | Look |
 | ----- | ---- |
-| `"default"` | GTA Online's white titles, key bar and "passed / failed" screen, with each game on a real-looking device (a wall keypad, a junction box, a lock, a tablet, a key in a vice), with no dark window behind them |
-| `"terminal"` | A green hacker terminal with scanlines and a glow |
-| `"glass"` | A frosted glass panel over the game |
+| `"default"` | Each game is one real object (a wall keypad, a thermal charge, an electrical box, a lock cut open, a tablet, a key in a vice, an RF detector) with no window around it, and GTA's key bar at the bottom right |
+| `"terminal"` | The same objects as green lines on black |
+| `"glass"` | The same objects frosted and see-through |
 
-Pick one with `MG.Style` in `config.lua`, and change single colours with `MG.Theme`, for example `MG.Theme = {accent = "#3e7bfa"}`.
+Pick one with `MG.Style` in `config.lua`, and change single colours with `MG.Theme`, for example `MG.Theme = {good = "#3e7bfa"}`.
 
 The three GTA screens (drill, hack, safe) show GTA's own key bar at the bottom right, like in GTA
 Online, plus the game's name, the time or lives, and messages (a broken pin, a locked number) at the
@@ -130,5 +130,4 @@ Made by Vega. GPL-3.0.
 - Hacking laptop method names: [TransitNode/Hacking_PC](https://github.com/TransitNode/Hacking_PC) and draobrehtom's HackingGame gist (names only)
 - Safe dial sprite names: [TimothyDexter/FiveM-SafeCrackingMinigame](https://github.com/TimothyDexter/FiveM-SafeCrackingMinigame) (names only)
 - Sound, animation, scenario and prop names checked in [DurtyFree/gta-v-data-dumps](https://github.com/DurtyFree/gta-v-data-dumps)
-- Title font: [Oswald](https://github.com/googlefonts/OswaldFont) (SIL Open Font License 1.1, `web/fonts/OFL.txt`)
 - Drop-ins match the exports and events of [qb-minigames](https://github.com/qbcore-fivem/qb-minigames) (GPL-3.0), [safecracker](https://github.com/qbcore-fivem/safecracker), memorygame and mhacking (names only, no code copied)

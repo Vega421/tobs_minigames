@@ -6,21 +6,27 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <!-- The paints the games' objects use (style.css points the c-* classes at them) -->
+    <svg width="0" height="0" style="position: absolute" aria-hidden="true">
+        <defs>
+            <linearGradient id="p-alu" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#dcdfe2"/><stop offset="1" stop-color="#a7abb0"/></linearGradient>
+            <linearGradient id="p-paint" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d0d3d7"/><stop offset="1" stop-color="#b3b7bc"/></linearGradient>
+            <linearGradient id="p-plastic" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#34373c"/><stop offset="1" stop-color="#1e2023"/></linearGradient>
+            <linearGradient id="p-key" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f4f5f6"/><stop offset="1" stop-color="#dfe2e5"/></linearGradient>
+            <linearGradient id="p-brass" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e6cb86"/><stop offset="1" stop-color="#b39346"/></linearGradient>
+            <linearGradient id="p-brass-h" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#a8883e"/><stop offset=".45" stop-color="#e3c77f"/><stop offset="1" stop-color="#a8883e"/></linearGradient>
+            <linearGradient id="p-steel" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#8c9197"/><stop offset=".5" stop-color="#e2e5e8"/><stop offset="1" stop-color="#8c9197"/></linearGradient>
+            <linearGradient id="p-round" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".35"/><stop offset=".45" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".35"/></linearGradient>
+            <linearGradient id="p-wood" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9a6538"/><stop offset="1" stop-color="#5e3a1f"/></linearGradient>
+            <linearGradient id="p-vice" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#55647a"/><stop offset="1" stop-color="#36424f"/></linearGradient>
+            <pattern id="p-brush" width="10" height="2" patternUnits="userSpaceOnUse"><rect width="10" height="1" fill="#000" opacity="0.03"/></pattern>
+        </defs>
+    </svg>
     <div id="mg" class="hidden">
         <div class="panel">
-            <header>
-                <h1 id="mg-title"></h1>
-                <div class="header-right">
-                    <div id="mg-status"></div>
-                    <div id="mg-time"></div>
-                </div>
-            </header>
-            <div class="timer"><div id="mg-timer"></div></div>
             <main id="mg-body"></main>
-            <footer>
-                <span id="mg-hint"></span>
-                <span id="mg-giveup"></span>
-            </footer>
+            <div id="mg-hint" class="label"></div>
+            <div class="hud"><span id="mg-status"></span><span id="mg-time"></span></div>
             <div id="mg-intro" class="hidden">
                 <h2 id="mg-intro-title"></h2>
                 <p id="mg-intro-howto"></p>
@@ -32,6 +38,7 @@
                 <div id="mg-result-sub"></div>
             </div>
         </div>
+        <div id="mg-keys" class="keybar"></div>
     </div>
     <script src="logic.js"></script>
     <script src="app.js"></script>

@@ -37,5 +37,4 @@ files {
     "web/style.css",
     "web/logic.js",
     "web/app.js",
-    "web/fonts/*.woff2",
 }

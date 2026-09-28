@@ -1,5 +1,9 @@
 // Draws and runs the web minigames. client/main.lua opens one with {action: "open", game, opts, text}
 // and gets the result back through the "done" callback. The rules are in logic.js.
+//
+// The look: each game is one object drawn in SVG (a keypad, a charge, a junction box, a lock, ...)
+// with no window around it; under it a short instruction and the time; GTA's key bar at the bottom
+// right. Shapes are painted by CSS classes (c-*), so MG.Style can repaint them.
 (function () {
   'use strict';
   const M = window.MGLogic;
@@ -7,7 +11,8 @@
   // Outside FiveM (dev/preview.html) there's no game: results and sounds go to the page around this one
   const IN_GAME = typeof GetParentResourceName === 'function';
   const RESOURCE = IN_GAME ? GetParentResourceName() : 'tobs_minigames';
-  const WIRE_HEX = { red: '#e5484d', blue: '#3e7bfa', yellow: '#f5d90a', green: '#30a46c', white: '#eceef2', black: '#1c1f26', orange: '#f76b15', purple: '#8e4ec6' };
+  const WIRE_HEX = { red: '#c8312b', blue: '#2459c4', yellow: '#e8c832', green: '#2e8b4e', white: '#e9e9e6', black: '#1c1f26', orange: '#e0782b', purple: '#7d45b8' };
+  const LIGHT_INK = ['white', 'yellow', 'orange'];
 
   let game = null; // the running game: {name, o, t, ended, frame, timerEnd, onKey}
 
@@ -17,7 +22,29 @@
     if (text !== undefined) e.textContent = text;
     return e;
   }
+  const SVGNS = 'http://www.w3.org/2000/svg';
+  // An SVG element; with a parent it's added to it
+  function sv(tag, attrs, parent) {
+    const e = document.createElementNS(SVGNS, tag);
+    for (const [k, v] of Object.entries(attrs || {})) e.setAttribute(k, v);
+    if (parent) parent.append(e);
+    return e;
+  }
+  function svText(parent, x, y, text, attrs) {
+    const t = sv('text', Object.assign({ x, y }, attrs), parent);
+    t.textContent = text;
+    return t;
+  }
+  function svgBox(w, h, cls) {
+    return sv('svg', { width: w, height: h, viewBox: `0 0 ${w} ${h}`, class: `thing ${cls || ''}` });
+  }
+  // A slotted screw head
+  function screw(parent, x, y, turn) {
+    sv('circle', { cx: x, cy: y, r: 6, class: 'c-screw' }, parent);
+    sv('line', { x1: x - 4, y1: y, x2: x + 4, y2: y, class: 'c-slot', transform: `rotate(${turn || 30} ${x} ${y})` }, parent);
+  }
   const fmt = (text, ...args) => { let i = 0; return text.replace(/%[sd]/g, () => String(args[i++])); };
+  const cssColor = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 
   function post(name, data) {
     if (!IN_GAME) { window.parent.postMessage({ preview: name, data }, '*'); return; }
@@ -28,8 +55,6 @@
     }).catch(() => {});
   }
 
-  function status(text) { $('mg-status').textContent = text || ''; }
-
   // Text with keys: "[SPACE]" and "[W]" are drawn as keycaps
   function setText(node, text) {
     node.textContent = '';
@@ -39,23 +64,36 @@
     });
   }
 
-  // Lives, mistakes or attempts as dots: filled for what's left. The first call sets the total.
-  function counter(label, left) {
-    if (game.counterMax == null) game.counterMax = left;
-    const box = $('mg-status');
-    box.textContent = '';
-    box.title = `${label}: ${Math.max(0, left)}`;
-    box.append(el('span', 'counter-label', label));
-    if (game.counterMax <= 0) { box.append(el('span', 'dot lost')); return; }
-    for (let i = 0; i < game.counterMax; i++) box.append(el('span', i < left ? 'dot' : 'dot lost'));
+  // GTA's key bar at the bottom right: ESC to give up, then the game's own keys.
+  // keys: [[key, label], ...]; the key "mouse" draws a mouse.
+  function keyBar(keys) {
+    const bar = $('mg-keys');
+    bar.textContent = '';
+    for (const [key, label] of [['ESC', game.t.key_giveup]].concat(keys || [])) {
+      const item = el('span');
+      const cap = el('kbd');
+      if (key === 'mouse') {
+        const m = sv('svg', { width: 12, height: 16, viewBox: '0 0 12 16' }, cap);
+        sv('rect', { x: 1, y: 1, width: 10, height: 14, rx: 5, fill: 'none', stroke: 'currentColor', 'stroke-width': 1.5 }, m);
+        sv('line', { x1: 6, y1: 3, x2: 6, y2: 6.5, stroke: 'currentColor', 'stroke-width': 1.5 }, m);
+      } else cap.textContent = key;
+      item.append(cap, document.createTextNode(label || ''));
+      bar.append(item);
+    }
   }
 
-  // A short effect on the panel: "shake" for a mistake, "pulse" for a right step
+  // Lives, mistakes or attempts: "Attempts 2" under the object
+  function counter(label, left) {
+    $('mg-status').textContent = `${label} ${Math.max(0, left)}`;
+  }
+  function hint(text) { setText($('mg-hint'), text); }
+
+  // A short effect on the object: "shake" for a mistake, "pulse" for a right step
   function effect(name) {
-    const panel = document.querySelector('#mg .panel');
-    panel.classList.remove('fx-shake', 'fx-pulse');
-    void panel.offsetWidth; // restart the animation
-    panel.classList.add(`fx-${name}`);
+    const body = $('mg-body');
+    body.classList.remove('fx-shake', 'fx-pulse');
+    void body.offsetWidth; // restart the animation
+    body.classList.add(`fx-${name}`);
   }
 
   // A GTA sound through the game: "click", "move", "good", "bad", "success" or "fail"
@@ -65,7 +103,7 @@
     else if (name === 'good') effect('pulse');
   }
 
-  // A countdown bar; the game fails when it runs out (fails = false: it only shows the time)
+  // A countdown; the game fails when it runs out (fails = false: it only counts, nothing shows)
   function startTimer(seconds, fails = true) {
     game.timerEnd = performance.now() + seconds * 1000;
     game.timerLength = seconds * 1000;
@@ -74,7 +112,6 @@
   }
   function stopTimer() {
     game.timerEnd = null;
-    $('mg-timer').style.transform = 'scaleX(1)';
     $('mg-time').textContent = '';
     document.querySelector('#mg .panel').classList.remove('low-time');
   }
@@ -83,11 +120,10 @@
     if (!game || game.ended) return;
     if (game.timerEnd) {
       const left = game.timerEnd - now;
-      $('mg-timer').style.transform = `scaleX(${Math.max(0, left / game.timerLength)})`;
       if (game.timerFails) {
-        // the seconds, and a warning (red, pulsing, a tick a second) for the last few
+        // m:ss, and a warning (red, a tick a second) for the last few seconds
         const secs = Math.max(0, Math.min(Math.round(game.timerLength / 1000), Math.ceil(left / 1000)));
-        $('mg-time').textContent = `${secs} s`;
+        $('mg-time').textContent = `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`;
         const low = left <= Math.min(5000, game.timerLength * 0.3);
         document.querySelector('#mg .panel').classList.toggle('low-time', low);
         if (low && secs > 0 && secs !== game.lastTick) { game.lastTick = secs; post('sound', { name: 'move' }); }
@@ -107,7 +143,7 @@
     finish(false);
   }
 
-  // The end: "Success · 12.4 s" or "Failed · the reason"
+  // The end: "Success" / "Failed", with the time or the reason under it
   function finish(success, reason) {
     if (!game || game.ended) return;
     game.ended = true;
@@ -131,8 +167,7 @@
   }
 
   // MG.Theme from config.lua: colours for the CSS variables in style.css
-  // accent also colours the timer bar, which is white in the default look
-  const THEME_VARS = { accent: ['--brand', '--timer'], background: ['--bg'], text: ['--text'], muted: ['--muted'], good: ['--good'], bad: ['--bad'], gold: ['--gold'] };
+  const THEME_VARS = { accent: ['--brand'], background: ['--bg'], text: ['--text'], muted: ['--muted'], good: ['--good'], bad: ['--bad'], gold: ['--gold'] };
   function applyTheme(theme) {
     const root = document.documentElement.style;
     for (const [key, cssVars] of Object.entries(THEME_VARS)) {
@@ -144,20 +179,20 @@
   }
 
   // MG.Scale: the same share of the screen on any resolution (made for 1080p), never bigger than
-  // fits. In the preview (ui.fit) it just fills the frame.
+  // fits. In the preview (ui.fit) it just fills the frame. The key bar is scaled the same way.
   let ui = {};
   function applyScale(panel = document.querySelector('#mg .panel')) {
     panel.style.transform = 'none';
-    const fit = Math.min((innerWidth - 32) / panel.offsetWidth, (innerHeight - 32) / panel.offsetHeight);
+    const fit = Math.min((innerWidth - 32) / panel.offsetWidth, (innerHeight - 90) / panel.offsetHeight);
     const wanted = ui.fit ? 1.15 : (Number(ui.scale) || 1) * (innerHeight / 1080);
-    panel.style.transform = `scale(${Math.max(0.3, Math.min(wanted, fit))})`;
+    const k = Math.max(0.3, Math.min(wanted, fit));
+    panel.style.transform = `scale(${k})`;
+    document.documentElement.style.setProperty('--ui', String(Math.max(0.5, wanted)));
   }
   window.addEventListener('resize', () => {
     if (game) applyScale();
     if (menuOpen) applyScale($('mg-menu-panel'));
   });
-  // How much the panel is scaled on screen (for positions measured with getBoundingClientRect)
-  const panelScale = (node) => node.getBoundingClientRect().width / node.offsetWidth || 1;
 
   function applyUi(u) {
     ui = u || {};
@@ -178,28 +213,33 @@
     applyScale();
   }
 
-  function open(data) {
+  function reset(data, intro) {
     const t = data.text;
     applyStyle(data.style);
     applyTheme(data.theme);
     applyUi(data.ui);
-    game = { name: data.game, o: data.opts || {}, t, ended: false, rand: M.random(data.opts && data.opts.seed) };
     const panel = document.querySelector('#mg .panel');
-    panel.className = `panel game-${data.game}`;
-    $('mg-title').textContent = t['title_' + data.game] || data.game;
-    setText($('mg-hint'), '');
-    setText($('mg-giveup'), t.give_up);
+    panel.className = `panel game-${data.game}${intro ? ' intro' : ''}`;
+    hint('');
     $('mg-result').className = 'hidden';
     $('mg-body').innerHTML = '';
-    status('');
+    $('mg-status').textContent = '';
+    $('mg-intro-title').textContent = t['title_' + data.game] || data.game;
+    setText($('mg-intro-howto'), t['howto_' + data.game] || '');
+    setText($('mg-intro-start'), t.start);
     stopTimer();
+    keyBar([]);
+    return panel;
+  }
+
+  function open(data) {
+    game = { name: data.game, o: data.opts || {}, t: data.text, ended: false, rand: M.random(data.opts && data.opts.seed) };
+    const panel = reset(data, false);
+    const t = data.text;
     $('mg').classList.remove('hidden', 'leaving');
     // The "how to play" card; the game (and its timer) starts on SPACE, a click, or by itself
     const intro = Number(ui.intro) || 0;
     if (intro > 0 && t['howto_' + data.game]) {
-      $('mg-intro-title').textContent = t['title_' + data.game] || data.game;
-      setText($('mg-intro-howto'), t['howto_' + data.game]);
-      setText($('mg-intro-start'), t.start);
       let left = Math.ceil(intro);
       $('mg-intro-count').textContent = fmt(t.starts_in, left);
       $('mg-intro').classList.remove('hidden');
@@ -221,31 +261,16 @@
   // The card alone, before one of GTA's own screens (drill, hack, safe): the game itself isn't on this
   // page. SPACE, a click or the countdown answers "start"; ESC answers "gave up".
   function openIntro(data) {
-    const t = data.text;
-    applyStyle(data.style);
-    applyTheme(data.theme);
-    applyUi(data.ui);
-    game = { name: data.game, o: {}, t, ended: false, introOnly: true };
-    const panel = document.querySelector('#mg .panel');
-    panel.className = `panel game-${data.game} intro`;
-    $('mg-title').textContent = t['title_' + data.game] || data.game;
-    setText($('mg-hint'), '');
-    setText($('mg-giveup'), t.give_up);
-    $('mg-result').className = 'hidden';
-    $('mg-body').innerHTML = '';
-    status('');
-    stopTimer();
-    $('mg-intro-title').textContent = t['title_' + data.game] || data.game;
-    setText($('mg-intro-howto'), t['howto_' + data.game] || '');
-    setText($('mg-intro-start'), t.start);
+    game = { name: data.game, o: {}, t: data.text, ended: false, introOnly: true };
+    reset(data, true);
     let left = Math.max(1, Math.ceil(Number(data.ui && data.ui.intro) || 1));
-    $('mg-intro-count').textContent = fmt(t.starts_in, left);
+    $('mg-intro-count').textContent = fmt(data.text.starts_in, left);
     $('mg-intro').classList.remove('hidden');
     $('mg').classList.remove('hidden', 'leaving');
     game.introTimer = setInterval(() => {
       left -= 1;
       if (left <= 0) return endIntro(true);
-      $('mg-intro-count').textContent = fmt(t.starts_in, left);
+      $('mg-intro-count').textContent = fmt(data.text.starts_in, left);
     }, 1000);
     applyScale();
   }
@@ -272,23 +297,7 @@
 
   const Games = {};
 
-  // A device's case: screws in the corners, then the parts inside
-  function device(cls, ...parts) {
-    const d = el('div', `device ${cls}`);
-    for (let i = 0; i < 4; i++) d.append(el('span', 'screw'));
-    d.append(...parts);
-    return d;
-  }
-  // The model plate and two lights at the top of a device
-  function deviceTop(model) {
-    const top = el('div', 'dev-top');
-    const leds = el('div', 'leds');
-    leds.append(el('span', 'led red'), el('span', 'led green'));
-    top.append(el('span', 'kp-model', model), leds);
-    return top;
-  }
-
-  // KEYPAD: remember the code, then type it
+  // KEYPAD: a wall keypad with a display and two lights. Remember the code, then type it.
   Games.keypad = function (g) {
     const o = g.o;
     // o.code: a code the player already knows (e.g. from a note); with show = 0 it isn't shown first
@@ -297,32 +306,55 @@
     let attempts = o.attempts || 1;
     let input = '';
     let entering = false;
-    // a wall keypad: model plate and two lights, an LCD, then the keys
-    const box = el('div', 'keypad device');
-    const top = el('div', 'kp-top');
-    const leds = el('div', 'leds');
-    leds.append(el('span', 'led red'), el('span', 'led green'));
-    top.append(el('span', 'kp-model', 'KP-500'), leds);
-    const screen = el('div', 'screen');
-    const shown = el('div', 'code', showMs > 0 ? code : '');
-    screen.append(shown);
-    const flash = el('div', 'flash');
-    const keys = el('div', 'keys');
-    for (let i = 0; i < 4; i++) box.append(el('span', 'screw'));
-    box.append(top, screen, flash, keys);
-    $('mg-body').append(box);
-    setText($('mg-hint'), g.t.keypad_memorize);
 
-    const showInput = () => { shown.textContent = input.padEnd(code.length, '•'); };
+    const svg = svgBox(300, 470, 'keypad');
+    sv('rect', { x: 0.5, y: 0.5, width: 299, height: 469, rx: 18, class: 'c-alu' }, svg);
+    sv('rect', { x: 0.5, y: 0.5, width: 299, height: 469, rx: 18, class: 'c-brush' }, svg);
+    sv('rect', { x: 28, y: 30, width: 244, height: 64, rx: 4, class: 'c-display' }, svg);
+    const shown = svText(svg, 150, 74, '', { 'text-anchor': 'middle', class: 't-display', 'font-size': code.length > 7 ? 22 : 30, 'letter-spacing': code.length > 7 ? 5 : 10 });
+    const red = sv('circle', { cx: 244, cy: 116, r: 4, class: 'c-led red' }, svg);
+    const green = sv('circle', { cx: 258, cy: 116, r: 4, class: 'c-led green' }, svg);
+    svText(svg, 30, 120, 'ACCESS CONTROL', { class: 't-print', 'font-size': 9, 'letter-spacing': 2.5 });
+    const LETTERS = { 2: 'ABC', 3: 'DEF', 4: 'GHI', 5: 'JKL', 6: 'MNO', 7: 'PQRS', 8: 'TUV', 9: 'WXYZ' };
+    const keyEls = {};
+    ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'clear', '0', 'enter'].forEach((k, i) => {
+      const x = 36 + (i % 3) * 80, y = 146 + Math.floor(i / 3) * 76;
+      const grp = sv('g', { class: 'btn key' }, svg);
+      sv('rect', { x, y: y + 3, width: 68, height: 62, rx: 10, class: 'c-key-side' }, grp);
+      const top = sv('g', { class: 'press' }, grp);
+      sv('rect', { x, y, width: 68, height: 62, rx: 10, class: `c-key ${k === 'enter' ? 'go' : k === 'clear' ? 'stop' : ''}` }, top);
+      const word = k === 'clear' ? g.t.clear : k === 'enter' ? g.t.enter : k;
+      svText(top, x + 34, y + (LETTERS[k] ? 33 : k.length > 1 ? 36 : 40), word, { 'text-anchor': 'middle', class: 't-key', 'font-size': k.length > 1 ? 13 : 24, 'font-weight': k.length > 1 ? 600 : 500 });
+      if (LETTERS[k]) svText(top, x + 34, y + 50, LETTERS[k], { 'text-anchor': 'middle', class: 't-key-small', 'font-size': 9, 'letter-spacing': 2 });
+      grp.addEventListener('click', () => press(k));
+      keyEls[k] = grp;
+    });
+    const flash = el('div', 'flash');
+    $('mg-body').append(svg, flash);
+    hint(g.t.keypad_memorize);
+    keyBar([['ENTER', g.t.enter], ['0-9', g.t.key_type]]);
+
+    const showInput = () => { shown.textContent = input.padEnd(code.length, '_'); };
+    shown.textContent = showMs > 0 ? code : '';
+    const light = (which, ms) => {
+      which.classList.add('on');
+      if (ms) setTimeout(() => which.classList.remove('on'), ms);
+    };
+    const flick = (k) => {
+      const b = keyEls[k];
+      if (!b) return;
+      b.classList.add('down');
+      setTimeout(() => b.classList.remove('down'), 90);
+    };
     const press = (k) => {
       if (!entering || g.ended) return;
+      flick(k);
       if (k !== 'enter') sound('click');
       if (k === 'clear') input = '';
       else if (k === 'back') input = input.slice(0, -1);
       else if (k === 'enter') {
-        if (M.keypadCheck(code, input)) { box.classList.add('ok'); return finish(true); }
-        box.classList.remove('err'); void box.offsetWidth; box.classList.add('err');
-        setTimeout(() => box.classList.remove('err'), 700);
+        if (M.keypadCheck(code, input)) { light(green); return finish(true); }
+        light(red, 700);
         attempts -= 1;
         counter(g.t.attempts, attempts);
         if (attempts <= 0) return finish(false, g.t.keypad_wrong);
@@ -332,35 +364,17 @@
       } else if (input.length < code.length) input += k;
       showInput();
     };
-    const LETTERS = { 2: 'ABC', 3: 'DEF', 4: 'GHI', 5: 'JKL', 6: 'MNO', 7: 'PQRS', 8: 'TUV', 9: 'WXYZ' };
-    const keyEls = {};
-    ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'clear', '0', 'enter'].forEach((k) => {
-      const b = el('button', k === 'enter' || k === 'clear' ? k : '', k === 'clear' ? g.t.clear : k === 'enter' ? g.t.enter : k);
-      if (/^[0-9]$/.test(k)) b.append(el('small', '', LETTERS[k] || '\u00a0'));
-      b.onclick = () => press(k);
-      keyEls[k] = b;
-      keys.append(b);
-    });
-    // typing on the keyboard presses the key on screen too
-    const flick = (k) => {
-      const b = keyEls[k];
-      if (!b) return;
-      b.classList.add('pressed');
-      setTimeout(() => b.classList.remove('pressed'), 90);
-    };
-    keys.style.visibility = 'hidden';
     if (showMs > 0) startTimer(showMs / 1000, false);
     g.onKey = (e) => {
-      if (/^[0-9]$/.test(e.key)) { flick(e.key); press(e.key); }
+      if (/^[0-9]$/.test(e.key)) press(e.key);
       else if (e.key === 'Backspace') press('back');
-      else if (e.key === 'Enter') { flick('enter'); press('enter'); }
+      else if (e.key === 'Enter') press('enter');
     };
     const enter = () => {
       if (g.ended || game !== g) return;
       entering = true;
-      shown.classList.add('hidden-code');
-      keys.style.visibility = 'visible';
-      setText($('mg-hint'), g.t.keypad_enter);
+      svg.classList.add('entering');
+      hint(g.t.keypad_enter);
       counter(g.t.attempts, attempts);
       showInput();
       startTimer(o.time || 15);
@@ -368,7 +382,8 @@
     if (showMs > 0) setTimeout(enter, showMs); else enter();
   };
 
-  // THERMITE: remember the squares that light up, then click them
+  // THERMITE: a thermal charge's control unit with rubber pads. Remember the pads that light up,
+  // then press them.
   Games.thermite = function (g) {
     const o = g.o;
     const size = o.size || 6;
@@ -376,92 +391,125 @@
     const found = [];
     let mistakes = o.mistakes || 0;
     let clicking = false;
-    const grid = el('div', 'grid');
-    grid.style.gridTemplateColumns = `repeat(${size}, 1fr)`;
-    const cells = [...Array(size * size).keys()].map((i) => {
-      const c = el('div', 'cell' + (squares.includes(i) ? ' lit' : ''));
-      c.onclick = () => {
+
+    const svg = svgBox(368, 460, 'thermite');
+    // the two wires to the charge, out of the top
+    sv('path', { d: 'M120 0 C 120 -40 90 -60 60 -90', class: 'c-wire-red' }, svg);
+    sv('path', { d: 'M146 0 C 146 -40 170 -70 200 -95', class: 'c-wire-black' }, svg);
+    sv('rect', { x: 104, y: -8, width: 60, height: 18, rx: 4, class: 'c-plug' }, svg);
+    sv('rect', { x: 0.5, y: 6.5, width: 367, height: 452, rx: 18, class: 'c-plastic' }, svg);
+    svText(svg, 36, 52, 'THERMAL CHARGE', { class: 't-print-light', 'font-size': 13, 'letter-spacing': 3, 'font-weight': 600 });
+    svText(svg, 36, 72, 'TC-6 · IGNITION CONTROL', { class: 't-print', 'font-size': 10, 'letter-spacing': 2 });
+    const led = sv('circle', { cx: 322, cy: 50, r: 5, class: 'c-led amber' }, svg);
+    sv('rect', { x: 28, y: 106, width: 312, height: 312, rx: 10, class: 'c-recess' }, svg);
+    const gap = 8, cell = (296 - gap * (size - 1)) / size;
+    const pads = [...Array(size * size).keys()].map((i) => {
+      const x = 36 + (i % size) * (cell + gap), y = 114 + Math.floor(i / size) * (cell + gap);
+      const grp = sv('g', { class: 'btn pad' + (squares.includes(i) ? ' lit' : '') }, svg);
+      sv('rect', { x, y: y + 2, width: cell, height: cell, rx: 5, class: 'c-pad-side' }, grp);
+      sv('rect', { x, y, width: cell, height: cell, rx: 5, class: 'c-pad' }, grp);
+      sv('rect', { x: x + cell * 0.2, y: y + cell * 0.15, width: cell * 0.6, height: cell * 0.35, rx: 4, class: 'c-pad-shine' }, grp);
+      grp.addEventListener('click', () => {
         if (!clicking || g.ended) return;
         const r = M.thermiteClick(squares, found, i);
         if (r === 'again') return;
         if (r === 'miss') {
-          c.classList.add('miss');
+          grp.classList.add('miss');
           mistakes -= 1;
           counter(g.t.mistakes, Math.max(0, mistakes));
           if (mistakes < 0) return finish(false);
           return sound('bad');
         }
         found.push(i);
-        c.classList.add('hit');
+        grp.classList.add('hit');
         if (r === 'done') return finish(true);
         sound('good');
-      };
-      grid.append(c);
-      return c;
+      });
+      return grp;
     });
-    const screen = el('div', 'screen');
-    screen.append(grid);
-    $('mg-body').append(device('thermite-dev', deviceTop('TX-3'), screen));
-    setText($('mg-hint'), g.t.thermite_memorize);
+    $('mg-body').append(svg);
+    hint(g.t.thermite_memorize);
+    keyBar([['mouse', g.t.key_pick]]);
+    led.classList.add('on');
     startTimer((o.show || 2500) / 1000, false);
     setTimeout(() => {
       if (g.ended || game !== g) return;
       clicking = true;
-      cells.forEach((c) => c.classList.remove('lit'));
-      setText($('mg-hint'), g.t.thermite_click);
+      pads.forEach((p) => p.classList.remove('lit'));
+      led.classList.remove('on');
+      hint(g.t.thermite_click);
       counter(g.t.mistakes, mistakes);
       startTimer(o.time || 12);
     }, o.show || 2500);
   };
 
-  // WIRES: cut them in the order of the clues
+  // WIRES: an electrical box with terminal blocks; cut the wires in the order of the clues on the
+  // sticky note. Every wire has a marker sleeve with its colour's name (MG.Wires.labels).
   Games.wires = function (g) {
     const o = g.o;
     const puzzle = M.makeWires(g.rand, o.wires || 5, o.cuts || 3);
+    const n = puzzle.colors.length;
     let done = 0;
-    const wrap = el('div', 'wires');
-    // a junction box: screws, a hazard stripe, and the wires inside
-    const wireBox = el('div', 'wire-box');
-    for (let i = 0; i < 4; i++) wireBox.append(el('span', 'screw'));
-    const inside = el('div', 'wire-inside');
-    wireBox.append(inside);
-    const clues = el('ol', 'clues');
+    const H = 110 + n * 50;
+    const svg = svgBox(540, H, 'wires');
+    sv('rect', { x: 0.5, y: 0.5, width: 539, height: H - 1, rx: 10, class: 'c-paint' }, svg);
+    sv('rect', { x: 0.5, y: 0.5, width: 539, height: H - 1, rx: 10, class: 'c-brush' }, svg);
+    screw(svg, 18, 18); screw(svg, 522, 18, 80); screw(svg, 18, H - 18, 110); screw(svg, 522, H - 18, 5);
+    sv('rect', { x: 30, y: 44, width: 480, height: H - 80, rx: 6, class: 'c-cavity' }, svg);
     const clueText = (c) => {
       if (c.kind === 'color') return fmt(g.t.clue_color, g.t[c.color]);
       if (c.kind === 'position') return fmt(g.t.clue_position, c.n);
       return fmt(c.kind === 'below' ? g.t.clue_below : g.t.clue_above, g.t['n_' + c.color]);
     };
+    const note = el('div', 'note');
+    const clues = el('ol');
+    note.append(clues);
     const items = puzzle.clues.map((c, i) => {
       const li = el('li', i === 0 ? 'current' : '', clueText(c));
       clues.append(li);
       return li;
     });
     puzzle.colors.forEach((color, i) => {
-      const w = el('div', `wire wire-${color}`);
-      w.style.backgroundColor = WIRE_HEX[color];
-      // colour-blind friendly: every colour has its own pattern and its name on the wire
-      if (o.labels !== false) w.append(el('span', 'wire-label', g.t['n_' + color]));
-      w.onclick = () => {
-        if (g.ended || w.classList.contains('cut')) return;
+      const y = 94 + i * 50;
+      sv('rect', { x: 44, y: y - 14, width: 34, height: 28, rx: 3, class: 'c-terminal' }, svg);
+      screw(svg, 61, y, 20 + i * 25);
+      sv('rect', { x: 462, y: y - 14, width: 34, height: 28, rx: 3, class: 'c-terminal' }, svg);
+      screw(svg, 479, y, 60 - i * 20);
+      const grp = sv('g', { class: 'btn wire' }, svg);
+      const whole = sv('g', {}, grp);
+      sv('rect', { x: 78, y: y - 7, width: 384, height: 14, rx: 7, fill: WIRE_HEX[color], class: 'c-insulation' }, whole);
+      sv('rect', { x: 78, y: y - 7, width: 384, height: 14, rx: 7, class: 'c-round' }, whole);
+      sv('rect', { x: 78, y: y - 12, width: 384, height: 24, fill: 'transparent' }, grp); // easier to click
+      if (o.labels !== false) {
+        sv('rect', { x: 96, y: y - 9, width: 52, height: 18, rx: 2, class: 'c-sleeve' }, grp);
+        svText(grp, 122, y + 3.5, g.t['n_' + color].toUpperCase(), { 'text-anchor': 'middle', class: 't-sleeve', 'font-size': 9, 'font-weight': 700, 'letter-spacing': 0.8 });
+      }
+      grp.addEventListener('click', () => {
+        if (g.ended || grp.classList.contains('cut')) return;
         const r = M.cutWire(puzzle, done, i);
-        w.classList.add('cut');
-        w.append(el('div', 'gap'));
-        if (r === 'wrong') { w.classList.add('wrong'); return finish(false); }
+        // the cut: a gap in the middle with the copper showing at both ends
+        grp.classList.add('cut');
+        sv('rect', { x: 250, y: y - 10, width: 28, height: 20, class: 'c-cut-gap' }, grp);
+        sv('rect', { x: 250, y: y - 3, width: 7, height: 6, class: 'c-copper' }, grp);
+        sv('rect', { x: 271, y: y - 3, width: 7, height: 6, class: 'c-copper' }, grp);
+        if (r === 'wrong') { grp.classList.add('wrong'); return finish(false); }
         items[done].className = 'done';
         done += 1;
         if (r === 'done') return finish(true);
         sound('good');
         items[done].className = 'current';
-      };
-      inside.append(w);
+      });
     });
-    wrap.append(wireBox, clues);
-    $('mg-body').append(wrap);
-    setText($('mg-hint'), g.t.wires_hint);
+    const row = el('div', 'row');
+    row.append(svg, note);
+    $('mg-body').append(row);
+    hint(g.t.wires_hint);
+    keyBar([['mouse', g.t.key_cut]]);
     startTimer(o.time || 20);
   };
 
-  // LOCKPICK: stop the pick in each pin's sweet spot
+  // LOCKPICK: the lock cut open: springs, driver pins and key pins over the brass plug, the pick
+  // under the pin it works on. Stop the marker on the scale in the sweet spot, once for every pin.
   Games.lockpick = function (g) {
     const o = g.o;
     const zone = o.zone || 0.13;
@@ -470,35 +518,65 @@
     let lives = o.lives || 1;
     let started = performance.now();
     let pos = 0;
-    const box = el('div', 'lock');
-    const pinRow = el('div', 'pins');
-    const pinEls = pins.map((_, i) => { const p = el('div', 'pin' + (i === 0 ? ' current' : '')); pinRow.append(p); return p; });
-    const track = el('div', 'track');
-    const zoneEl = el('div', 'zone');
-    const pick = el('div', 'pick');
+
+    const svg = svgBox(520, 330, 'lockpick');
+    sv('rect', { x: 30, y: 10, width: 460, height: 230, rx: 16, class: 'c-steel' }, svg);
+    sv('rect', { x: 30, y: 10, width: 460, height: 230, rx: 16, class: 'c-brush' }, svg);
+    sv('rect', { x: 46, y: 110, width: 428, height: 118, rx: 10, class: 'c-brass' }, svg);
+    sv('line', { x1: 46, y1: 112, x2: 474, y2: 112, class: 'c-shear' }, svg);
+    const step = Math.min(62, 330 / pins.length), x0 = 260 - (step * (pins.length - 1)) / 2;
+    const stacks = pins.map((_, i) => {
+      const x = x0 + i * step;
+      sv('rect', { x: x - 13, y: 28, width: 26, height: 150, class: 'c-chamber' }, svg);
+      const grp = sv('g', { class: 'stack' }, svg);
+      let d = `M${x} 32`;
+      for (let k = 0; k < 8; k++) d += ` L${x + (k % 2 ? -9 : 9)} ${36 + k * 6}`;
+      const spring = sv('path', { d, class: 'c-spring' }, grp);
+      const lift = sv('g', {}, grp);
+      sv('rect', { x: x - 10, y: 82, width: 20, height: 36, rx: 3, class: 'c-pin-steel' }, lift);
+      sv('path', { d: `M${x - 10} 128 h20 v34 l-10 8 l-10 -8 z`, class: 'c-pin-brass' }, lift);
+      const mark = sv('rect', { x: x - 15, y: 26, width: 30, height: 154, class: 'c-current' }, svg);
+      return { x, grp, spring, lift, mark };
+    });
+    sv('rect', { x: 46, y: 186, width: 428, height: 26, class: 'c-keyway' }, svg);
+    const pick = sv('path', { class: 'c-pick' }, svg);
+    sv('path', { d: 'M-40 222 H 70 v 14', class: 'c-tension' }, svg);
+    // the scale: the sweet spot and the moving marker
+    const scale = sv('g', { class: 'btn' }, svg);
+    sv('rect', { x: 30, y: 270, width: 460, height: 18, rx: 9, class: 'c-track' }, scale);
+    const zoneEl = sv('rect', { y: 270, height: 18, class: 'c-zone' }, scale);
+    const zl = sv('line', { y1: 266, y2: 292, class: 'c-zone-edge' }, scale);
+    const zr = sv('line', { y1: 266, y2: 292, class: 'c-zone-edge' }, scale);
+    const marker = sv('rect', { y: 264, width: 4, height: 30, rx: 2, class: 'c-marker' }, scale);
+    const counterText = svText(svg, 30, 316, '', { class: 't-under', 'font-size': 11, 'letter-spacing': 2 });
     const flash = el('div', 'flash');
-    track.append(zoneEl, pick);
-    const cylinder = el('div', 'cylinder');
-    cylinder.append(pinRow);
-    box.append(device('lock-dev', cylinder, track), flash);
-    $('mg-body').append(box);
-    setText($('mg-hint'), g.t.lockpick_hint);
+    $('mg-body').append(svg, flash);
+    hint(g.t.do_lockpick);
+    keyBar([['SPACE', g.t.key_set]]);
     counter(g.t.lives, lives);
 
-    const placeZone = () => {
-      zoneEl.style.left = `${(pins[current] - zone / 2) * 100}%`;
-      zoneEl.style.width = `${zone * 100}%`;
+    const X = (v) => 30 + v * 460;
+    const place = () => {
+      const a = X(pins[current] - zone / 2), b = X(pins[current] + zone / 2);
+      zoneEl.setAttribute('x', a); zoneEl.setAttribute('width', b - a);
+      zl.setAttribute('x1', a); zl.setAttribute('x2', a); zr.setAttribute('x1', b); zr.setAttribute('x2', b);
+      stacks.forEach((s, i) => {
+        s.mark.style.display = i === current ? '' : 'none';
+        s.grp.classList.toggle('set', i < current);
+        if (i < current) s.lift.setAttribute('transform', 'translate(0 -12)');
+      });
+      counterText.textContent = `${Math.min(current + 1, pins.length)} / ${pins.length}`;
+      const x = stacks[Math.min(current, pins.length - 1)].x;
+      pick.setAttribute('d', `M-10 199 H ${x - 8} q 8 0 10 -9 l 3 -6`);
     };
-    placeZone();
+    place();
     const tryPin = () => {
       if (g.ended) return;
       if (M.inZone(pos, pins[current], zone)) {
-        pinEls[current].className = 'pin set';
         current += 1;
         flash.textContent = '';
-        if (current >= pins.length) return finish(true);
-        pinEls[current].className = 'pin current';
-        placeZone();
+        if (current >= pins.length) { place(); return finish(true); }
+        place();
         started = performance.now();
         sound('good');
       } else {
@@ -509,11 +587,16 @@
         flash.textContent = g.t.pick_broke;
       }
     };
-    track.onclick = tryPin;
+    svg.addEventListener('click', tryPin);
     g.onKey = (e) => { if (e.code === 'Space') { e.preventDefault(); tryPin(); } };
     g.frame = (now) => {
       pos = M.sweep((now - started) / 1000, o.speed || 1);
-      pick.style.left = `${pos * 100}%`;
+      marker.setAttribute('x', X(pos) - 2);
+      // the pin being worked on rises a little as the marker nears the sweet spot
+      if (current < pins.length) {
+        const near = Math.max(0, 1 - Math.abs(pos - pins[current]) / (zone * 2));
+        stacks[current].lift.setAttribute('transform', `translate(0 ${-6 * near})`);
+      }
     };
     if (o.time) startTimer(o.time);
   };
@@ -699,81 +782,97 @@
       }
     };
     newPrint();
-    setText($('mg-hint'), g.t.fingerprint_hint);
+    hint(g.t.do_fingerprint);
+    keyBar([['TAB', g.t.check], ['SPACE', g.t.key_pick], ['↑ ↓ ← →', g.t.btn_move]]);
     startTimer(o.time || 40);
   };
 
-  // A CSS variable's current colour (the theme), for drawing on canvases
-  const cssColor = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
-  const DARK_INK = ['black', 'blue', 'purple', 'green', 'red'];
-
-  // HOTWIRE: click a wire, then the terminal with its colour's name
+  // HOTWIRE: under the steering column: the ignition lock, the wires out of a ribbed sleeve, and a
+  // terminal strip with printed labels (in other colours when `tricky`). Click a wire, then its
+  // colour's name.
   Games.hotwire = function (g) {
     const o = g.o;
     const puzzle = M.makeHotwire(g.rand, o.wires || 4, o.tricky);
+    const n = puzzle.wires.length;
     const connected = [], usedTerms = [];
     let mistakes = o.mistakes || 0;
     let picked = null;
-    const box = el('div', 'hotwire');
-    const left = el('div', 'hw-col'), right = el('div', 'hw-col');
-    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-    svg.setAttribute('class', 'hw-lines');
-    const flash = el('div', 'flash');
+
+    const H = Math.max(320, 110 + n * 62);
+    const svg = svgBox(640, H, 'hotwire');
+    sv('rect', { x: 0, y: 0, width: 640, height: H, rx: 6, class: 'c-dash' }, svg);
+    sv('path', { d: 'M0 0 H640 V40 Q 320 70 0 40 Z', class: 'c-dash-lip' }, svg);
+    sv('circle', { cx: 120, cy: 40, r: 30, class: 'c-steel' }, svg);
+    sv('rect', { x: 104, y: 34, width: 32, height: 12, rx: 2, class: 'c-keyhole' }, svg);
+    // the ribbed sleeve the wires come out of
+    sv('rect', { x: 18, y: 80, width: 54, height: H - 110, rx: 27, class: 'c-sleeve-tube' }, svg);
+    for (let y = 88; y < H - 36; y += 10.5) sv('line', { x1: 18, y1: y, x2: 72, y2: y, class: 'c-rib' }, svg);
+    sv('rect', { x: 458, y: 50, width: 154, height: n * 62 + 10, rx: 6, class: 'c-strip' }, svg);
+    const lines = sv('g', {}, svg);
+    const wireY = (i) => 100 + i * ((H - 170) / Math.max(1, n - 1));
+    const termY = (j) => 60 + j * 62;
     const wireEls = puzzle.wires.map((color, i) => {
-      const w = el('div', `wire hw-wire wire-${color}`);
-      w.style.backgroundColor = WIRE_HEX[color];
-      if (o.labels !== false) w.append(el('span', 'wire-label', g.t['n_' + color]));
-      w.onclick = () => {
+      const y = wireY(i);
+      const grp = sv('g', { class: 'btn hw-wire' }, svg);
+      const d = `M70 ${y} C 150 ${y} 180 ${y + 6} 230 ${y + 10}`;
+      sv('path', { d, class: 'c-outline' }, grp);
+      sv('path', { d, stroke: WIRE_HEX[color], class: 'c-cable' }, grp);
+      sv('path', { d, class: 'c-cable-shine', transform: 'translate(0 -3)' }, grp);
+      sv('line', { x1: 236, y1: y + 10.5, x2: 254, y2: y + 11.5, class: 'c-bare' }, grp);
+      if (o.labels !== false) {
+        sv('rect', { x: 92, y: y - 9, width: 52, height: 18, rx: 2, class: 'c-sleeve' }, grp);
+        svText(grp, 118, y + 3.5, g.t['n_' + color].toUpperCase(), { 'text-anchor': 'middle', class: 't-sleeve', 'font-size': 9, 'font-weight': 700, 'letter-spacing': 0.8 });
+      }
+      grp.addEventListener('click', () => {
         if (g.ended || connected.includes(i)) return;
         picked = i;
         wireEls.forEach((e, j) => e.classList.toggle('picked', j === i));
         sound('click');
-      };
-      left.append(w);
-      return w;
+      });
+      return grp;
     });
-    const link = (w, b, color) => {
-      const r = box.getBoundingClientRect(), a = w.getBoundingClientRect(), c = b.getBoundingClientRect();
-      const k = panelScale(box);
-      const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-      line.setAttribute('x1', (a.right - r.left) / k); line.setAttribute('y1', (a.top + a.height / 2 - r.top) / k);
-      line.setAttribute('x2', (c.left - r.left) / k); line.setAttribute('y2', (c.top + c.height / 2 - r.top) / k);
-      line.setAttribute('stroke', WIRE_HEX[color]);
-      svg.append(line);
+    // a connected wire runs from the sleeve to the terminal's screw
+    const link = (i, j) => {
+      const y = wireY(i), ty = termY(j) + 14;
+      const d = `M70 ${y} C 250 ${y} 330 ${ty} 480 ${ty}`;
+      sv('path', { d, stroke: WIRE_HEX[puzzle.wires[i]], class: 'c-cable' }, lines);
+      sv('path', { d, class: 'c-cable-shine', transform: 'translate(0 -3)' }, lines);
+      wireEls[i].style.display = 'none';
     };
     puzzle.terminals.forEach((term, j) => {
-      const b = el('div', 'hw-term', g.t['n_' + term.name].toUpperCase());
-      b.style.color = WIRE_HEX[term.ink];
-      b.classList.add(DARK_INK.includes(term.ink) ? 'ink-dark' : 'ink-light');
-      b.onclick = () => {
+      const y = termY(j);
+      const grp = sv('g', { class: 'btn hw-term' }, svg);
+      const dark = LIGHT_INK.includes(term.ink);
+      sv('rect', { x: 470, y: y - 4, width: 130, height: 36, rx: 3, class: dark ? 'c-label-dark' : 'c-label' }, grp);
+      sv('circle', { cx: 490, cy: y + 14, r: 9, class: 'c-brass-screw' }, grp);
+      sv('line', { x1: 484, y1: y + 14, x2: 496, y2: y + 14, class: 'c-brass-slot' }, grp);
+      svText(grp, 548, y + 20, g.t['n_' + term.name].toUpperCase(), { 'text-anchor': 'middle', fill: WIRE_HEX[term.ink], class: 't-label', 'font-size': 15, 'font-weight': 700, 'letter-spacing': 1.5 });
+      grp.addEventListener('click', () => {
         if (g.ended || picked === null || usedTerms.includes(j)) return;
         const r = M.connectWire(puzzle, connected, picked, j);
         if (r === 'used') return;
         if (r === 'wrong') {
           mistakes -= 1;
           counter(g.t.mistakes, Math.max(0, mistakes));
-          b.classList.remove('spark'); void b.offsetWidth; b.classList.add('spark');
+          grp.classList.remove('spark'); void grp.getBoundingClientRect(); grp.classList.add('spark');
           if (mistakes < 0) return finish(false, g.t.sparks);
           flash.textContent = g.t.sparks;
           return sound('bad');
         }
         connected.push(picked);
         usedTerms.push(j);
-        wireEls[picked].classList.add('connected');
-        wireEls[picked].classList.remove('picked');
-        b.classList.add('connected');
-        link(wireEls[picked], b, puzzle.wires[picked]);
+        grp.classList.add('connected');
+        link(picked, j);
         picked = null;
         flash.textContent = '';
         if (r === 'done') return finish(true);
         sound('good');
-      };
-      right.append(b);
+      });
     });
-    box.append(left, svg, right);
-    $('mg-body').append(el('div', 'hw-wrap'));
-    $('mg-body').lastChild.append(box, flash);
-    setText($('mg-hint'), g.t.hotwire_hint);
+    const flash = el('div', 'flash');
+    $('mg-body').append(svg, flash);
+    hint(g.t.do_hotwire);
+    keyBar([['mouse', g.t.key_connect]]);
     counter(g.t.mistakes, mistakes);
     startTimer(o.time || 16);
   };
@@ -781,13 +880,13 @@
   // A tablet around a game's screen
   function tablet(...parts) {
     const t = el('div', 'tablet');
-    const body = el('div', 'tablet-body');
-    body.append(...parts);
-    t.append(body);
+    const glass = el('div', 'tablet-glass');
+    glass.append(...parts);
+    t.append(el('span', 'tablet-cam'), glass);
     return t;
   }
 
-  // LASER GRID: cross the room without touching a laser
+  // LASER GRID: a tablet showing the room's floor plan. Cross it without touching a laser.
   const MOVE_KEYS = { KeyW: 'up', ArrowUp: 'up', KeyS: 'down', ArrowDown: 'down', KeyA: 'left', ArrowLeft: 'left', KeyD: 'right', ArrowRight: 'right' };
   Games.lasers = function (g) {
     const o = g.o;
@@ -796,9 +895,7 @@
     const canvas = el('canvas', 'room');
     canvas.width = W; canvas.height = H;
     const flash = el('div', 'flash');
-    const wrap = el('div', 'room-wrap');
-    wrap.append(tablet(canvas), flash);
-    $('mg-body').append(wrap);
+    $('mg-body').append(tablet(canvas), flash);
     const ctx = canvas.getContext('2d');
     let p = { ...M.LASER_START }, lives = o.lives || 1, safeUntil = 0;
     const sparks = []; // {x, y, vx, vy, life} in pixels, from touching a laser
@@ -807,54 +904,41 @@
     let last = t0;
     g.onKey = (e) => { if (MOVE_KEYS[e.code]) { keys[MOVE_KEYS[e.code]] = true; e.preventDefault(); } };
     g.onKeyUp = (e) => { if (MOVE_KEYS[e.code]) keys[MOVE_KEYS[e.code]] = false; };
-    const laser = cssColor('--bad') || '#ff4d5e';
+    const laser = cssColor('--laser') || '#ff3b30';
+    const line = (x1, y1, x2, y2) => { ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke(); };
     const draw = (t) => {
-      ctx.fillStyle = cssColor('--floor');
-      ctx.fillRect(0, 0, W, H);
-      ctx.strokeStyle = cssColor('--floor-line');
-      ctx.lineWidth = 1;
-      for (let x = 0; x < W; x += 24) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
-      for (let y = 0; y < H; y += 24) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
-      ctx.fillStyle = cssColor('--floor-line');
-      ctx.fillRect(0, 0, 0.08 * S, H);
-      ctx.fillStyle = cssColor('--good') || '#3ecf8e';
-      ctx.globalAlpha = 0.25;
-      ctx.fillRect(0.95 * S, 0, W - 0.95 * S, H);
-      ctx.globalAlpha = 1;
+      ctx.fillStyle = cssColor('--floor'); ctx.fillRect(0, 0, W, H);
+      ctx.strokeStyle = cssColor('--floor-line'); ctx.lineWidth = 1;
+      for (let x = 0; x < W; x += 29) line(x, 0, x, H);
+      for (let y = 0; y < H; y += 29) line(0, y, W, y);
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.04)'; ctx.fillRect(0, 0, 0.08 * S, H); // the start
+      ctx.fillStyle = cssColor('--good'); ctx.globalAlpha = 0.22; ctx.fillRect(0.95 * S, 0, W - 0.95 * S, H); ctx.globalAlpha = 1; // the exit
+      ctx.strokeStyle = cssColor('--wall'); ctx.lineWidth = 6; ctx.strokeRect(0, 0, W, H);
       for (const b of beams) {
         const on = M.beamOn(b, t);
         const pos = M.beamPos(b, t) * S;
+        const segs = b.axis === 'v'
+          ? [[b.x * S, 0, b.x * S, pos - (b.gap / 2) * S], [b.x * S, pos + (b.gap / 2) * S, b.x * S, H]]
+          : [[b.from * S, pos, b.to * S, pos]];
         ctx.strokeStyle = laser;
-        ctx.lineWidth = on ? 3 : 1;
-        ctx.globalAlpha = on ? 1 : 0.25;
-        ctx.shadowColor = laser;
-        ctx.shadowBlur = on ? 12 : 0;
-        ctx.beginPath();
-        if (b.axis === 'v') {
-          const x = b.x * S, half = (b.gap / 2) * S;
-          ctx.moveTo(x, 0); ctx.lineTo(x, pos - half);
-          ctx.moveTo(x, pos + half); ctx.lineTo(x, H);
-        } else {
-          ctx.moveTo(b.from * S, pos); ctx.lineTo(b.to * S, pos);
+        for (const s of segs) {
+          if (on) { ctx.globalAlpha = 0.18; ctx.lineWidth = 7; line(...s); }
+          ctx.globalAlpha = on ? 1 : 0.3; ctx.lineWidth = on ? 2.5 : 1; line(...s);
         }
-        ctx.stroke();
-        ctx.shadowBlur = 0;
         ctx.globalAlpha = 1;
       }
       for (const s of sparks) {
         ctx.strokeStyle = s.life > 0.25 ? '#fff6c2' : laser;
         ctx.globalAlpha = Math.min(1, s.life * 2.5);
         ctx.lineWidth = 2;
-        ctx.beginPath(); ctx.moveTo(s.x, s.y); ctx.lineTo(s.x - s.vx * 0.03, s.y - s.vy * 0.03); ctx.stroke();
+        line(s.x, s.y, s.x - s.vx * 0.03, s.y - s.vy * 0.03);
       }
       ctx.globalAlpha = 1;
       const blinking = performance.now() < safeUntil && Math.floor(performance.now() / 120) % 2 === 0;
       if (!blinking) {
-        ctx.fillStyle = cssColor('--text') || '#fff';
+        ctx.fillStyle = cssColor('--dot') || '#fff';
         ctx.beginPath(); ctx.arc(p.x * S, p.y * S, M.PLAYER_R * S, 0, Math.PI * 2); ctx.fill();
-        ctx.strokeStyle = cssColor('--scan') || '#8fd3ff';
-        ctx.lineWidth = 2;
-        ctx.stroke();
+        ctx.strokeStyle = 'rgba(0, 0, 0, 0.45)'; ctx.lineWidth = 2; ctx.stroke();
       }
     };
     g.frame = (now) => {
@@ -883,20 +967,15 @@
       if (M.laserExit(p)) { draw(t); return finish(true); }
       draw(t);
     };
-    setText($('mg-hint'), g.t.lasers_hint);
+    hint(g.t.do_lasers);
+    keyBar([['W A S D', g.t.btn_move]]);
     counter(g.t.lives, lives);
     draw(0);
     startTimer(o.time || 35);
   };
 
-  // KEY FILING: file each cut down to its line, not deeper. The key is drawn as SVG: a bow, and a
-  // blade whose notches follow each cut's depth.
-  const SVGNS = 'http://www.w3.org/2000/svg';
-  const svgEl = (tag, attrs) => {
-    const e = document.createElementNS(SVGNS, tag);
-    for (const [k, v] of Object.entries(attrs || {})) e.setAttribute(k, v);
-    return e;
-  };
+  // KEY FILING: a brass key blank in a small bench vice, marker lines where each cut must end, and a
+  // file over the cut being worked on. File each cut down to its line, not deeper.
   Games.keyfiling = function (g) {
     const o = g.o;
     const tol = o.tolerance || 0.045;
@@ -905,65 +984,57 @@
     let depths = targets.map(() => 0);
     let sel = 0, filing = false, lives = o.lives || 1, lastRasp = 0, lastFiling = 0;
     let last = performance.now();
-    // Geometry (SVG units): blade from x0, each cut cw wide, top y0, bottom y1
-    const cw = Math.min(64, 330 / n), x0 = 150, y0 = 56, y1 = 150, reach = (y1 - y0) * 0.85;
-    const xEnd = x0 + n * cw + 10, W = xEnd + 40;
+    // Geometry: blade from x0, each cut cw wide, top y0, bottom y1
+    const cw = Math.min(64, 330 / n), x0 = 200, y0 = 120, y1 = 200, reach = (y1 - y0) * 0.85;
+    const xEnd = x0 + n * cw + 10, W = xEnd + 60;
     const depthY = (d) => y0 + d * reach;
-    const svg = svgEl('svg', { viewBox: `0 0 ${W} 200`, class: 'key-svg' });
-    // the vice's jaws holding the bow, then the bow: a ring with a hole, and the shoulder
-    const defs = svgEl('defs');
-    const grad = svgEl('linearGradient', { id: 'vice-metal', x1: 0, y1: 0, x2: 0, y2: 1 });
-    grad.append(svgEl('stop', { offset: 0, 'stop-color': '#8a9099' }), svgEl('stop', { offset: 1, 'stop-color': '#3b3f46' }));
-    defs.append(grad);
-    svg.append(defs);
-    svg.append(svgEl('rect', { x: 22, y: 14, width: 96, height: 32, rx: 3, class: 'vice' }));
-    svg.append(svgEl('rect', { x: 22, y: 160, width: 96, height: 32, rx: 3, class: 'vice' }));
-    svg.append(svgEl('circle', { cx: 70, cy: 103, r: 58, class: 'key-metal' }));
-    svg.append(svgEl('circle', { cx: 60, cy: 103, r: 18, class: 'key-hole' }));
-    svg.append(svgEl('rect', { x: 118, y: 72, width: 40, height: 62, rx: 6, class: 'key-metal' }));
-    const blade = svgEl('path', { class: 'key-metal' });
-    svg.append(blade);
-    svg.append(svgEl('line', { x1: x0, y1: 128, x2: xEnd, y2: 128, class: 'key-groove' }));
+    const svg = svgBox(W, 330, 'keyfiling');
+    // the vice: its base and two jaws holding the bow
+    sv('rect', { x: 30, y: 236, width: 170, height: 70, rx: 6, class: 'c-vice' }, svg);
+    sv('rect', { x: 40, y: 96, width: 70, height: 44, rx: 4, class: 'c-vice' }, svg);
+    sv('rect', { x: 40, y: 196, width: 70, height: 44, rx: 4, class: 'c-vice' }, svg);
+    // the key: bow, shoulder, blade
+    sv('circle', { cx: 110, cy: 168, r: 60, class: 'c-key-brass' }, svg);
+    sv('circle', { cx: 96, cy: 168, r: 17, class: 'c-key-hole' }, svg);
+    sv('rect', { x: 160, y: 136, width: 40, height: 64, rx: 5, class: 'c-key-brass' }, svg);
+    const blade = sv('path', { class: 'c-key-brass' }, svg);
+    sv('line', { x1: x0, y1: 182, x2: xEnd, y2: 182, class: 'c-groove' }, svg);
     const cols = targets.map((target, i) => {
       const x = x0 + i * cw;
-      const hi = svgEl('rect', { x: x + 2, y: 30, width: cw - 4, height: 126, rx: 6, class: 'cut-select' });
-      const band = svgEl('rect', { x: x + cw * 0.12, y: depthY(target - tol), width: cw * 0.76, height: 2 * tol * reach, class: 'cut-band' });
-      const line = svgEl('line', { x1: x + cw * 0.08, x2: x + cw * 0.92, y1: depthY(target), y2: depthY(target), class: 'cut-line' });
-      const ok = svgEl('circle', { cx: x + cw / 2, cy: 38, r: 5, class: 'cut-ok' });
-      const hit = svgEl('rect', { x, y: 20, width: cw, height: 150, class: 'cut-hit' });
+      sv('rect', { x: x + cw * 0.12, y: depthY(target - tol), width: cw * 0.76, height: 2 * tol * reach, class: 'c-cut-band' }, svg);
+      sv('line', { x1: x + cw * 0.12, x2: x + cw * 0.88, y1: depthY(target), y2: depthY(target), class: 'c-cut-line' }, svg);
+      const ok = sv('circle', { cx: x + cw / 2, cy: 106, r: 3.5, class: 'c-cut-ok' }, svg);
+      const hit = sv('rect', { x, y: 60, width: cw, height: 150, class: 'btn c-hit' }, svg);
       hit.addEventListener('mousedown', (e) => { if (g.ended) return; sel = i; filing = true; e.preventDefault(); });
-      svg.insertBefore(hi, blade);
-      svg.append(band, line, ok, hit);
-      return { hi, ok };
+      return { ok };
     });
-    const filings = svgEl('g');
-    svg.append(filings);
-    const box = el('div', 'key-wrap');
+    // the file: a steel blade with teeth and a wooden handle, over the selected cut
+    const file = sv('g', { class: 'file' }, svg);
+    sv('rect', { x: -120, y: -9, width: 190, height: 18, rx: 2, class: 'c-file' }, file);
+    sv('path', { d: Array.from({ length: 36 }, (_, k) => `M${-116 + k * 5} -9 l4 18`).join(' '), class: 'c-file-teeth' }, file);
+    sv('rect', { x: 70, y: -12, width: 80, height: 24, rx: 10, class: 'c-handle' }, file);
+    const filings = sv('g', {}, svg);
     const flash = el('div', 'flash');
-    const bench = el('div', 'bench');
-    bench.append(svg);
-    box.append(bench, flash);
-    $('mg-body').append(box);
+    $('mg-body').append(svg, flash);
 
-    const draw = () => {
+    const draw = (now) => {
       // the blade's top edge dips into a notch at each cut, then a pointed tip
-      let d = `M ${x0} ${y0}`;
+      let d = `M${x0 - 10} ${y0}`;
       depths.forEach((dep, i) => {
         const x = x0 + i * cw, y = depthY(dep);
-        d += ` L ${x + cw * 0.14} ${y0} L ${x + cw * 0.26} ${y} L ${x + cw * 0.74} ${y} L ${x + cw * 0.86} ${y0}`;
+        d += ` L${x + cw * 0.14} ${y0} L${x + cw * 0.26} ${y} L${x + cw * 0.74} ${y} L${x + cw * 0.86} ${y0}`;
       });
-      d += ` L ${xEnd} ${y0} L ${xEnd + 28} ${(y0 + y1) / 2 + 12} L ${xEnd} ${y1} L ${x0} ${y1} Z`;
+      d += ` L${xEnd} ${y0} L${xEnd + 28} ${(y0 + y1) / 2} L${xEnd} ${y1} L${x0 - 10} ${y1} Z`;
       blade.setAttribute('d', d);
-      cols.forEach((c, i) => {
-        c.hi.classList.toggle('on', i === sel);
-        c.ok.classList.toggle('on', M.cutOk(depths[i], targets[i], tol));
-      });
+      cols.forEach((c, i) => c.ok.classList.toggle('on', M.cutOk(depths[i], targets[i], tol)));
+      // the file rests on the selected cut, and moves back and forth while filing
+      const shake = filing ? Math.sin((now || 0) / 40) * 6 : 0;
+      file.setAttribute('transform', `translate(${x0 + sel * cw + cw / 2 + 60 + shake} ${depthY(depths[sel]) - 16}) rotate(-12)`);
     };
     const spark = () => {
       const x = x0 + sel * cw + cw * (0.3 + Math.random() * 0.4), y = depthY(depths[sel]);
-      const bit = svgEl('circle', { cx: x, cy: y, r: 1.4 + Math.random() * 1.2, class: 'filing' });
+      const bit = sv('circle', { cx: x, cy: y, r: 1.4 + Math.random() * 1.2, class: 'filing' }, filings);
       bit.style.setProperty('--dx', `${(Math.random() - 0.5) * 24}px`);
-      filings.append(bit);
       setTimeout(() => bit.remove(), 650);
     };
     const stopFiling = () => { filing = false; };
@@ -972,7 +1043,7 @@
       if (e.code === 'Space') { filing = true; e.preventDefault(); }
       else if (e.code === 'ArrowLeft' || e.code === 'KeyA') { sel = Math.max(0, sel - 1); sound('click'); }
       else if (e.code === 'ArrowRight' || e.code === 'KeyD') { sel = Math.min(n - 1, sel + 1); sound('click'); }
-      draw();
+      draw(performance.now());
     };
     g.onKeyUp = (e) => { if (e.code === 'Space') filing = false; };
     g.frame = (now) => {
@@ -986,66 +1057,74 @@
           filing = false;
           lives -= 1;
           counter(g.t.lives, Math.max(0, lives));
-          if (lives <= 0) { draw(); document.removeEventListener('mouseup', stopFiling); return finish(false, g.t.key_ruined); }
+          if (lives <= 0) { draw(now); document.removeEventListener('mouseup', stopFiling); return finish(false, g.t.key_ruined); }
           sound('bad');
           flash.textContent = g.t.key_ruined;
           depths = targets.map(() => 0);
         }
       }
-      draw();
+      draw(now);
       if (M.keyDone(depths, targets, tol)) { document.removeEventListener('mouseup', stopFiling); finish(true); }
     };
-    setText($('mg-hint'), g.t.keyfiling_hint);
+    hint(g.t.do_keyfiling);
+    keyBar([['SPACE', g.t.key_file], ['← →', g.t.key_choose]]);
     counter(g.t.lives, lives);
-    draw();
+    draw(0);
     startTimer(o.time || 40);
   };
 
-  // TRACKER SWEEP: follow the signal, click where the tracker is
+  // TRACKER SWEEP: the car from above and a handheld RF detector beside it. Sweep the car with the
+  // mouse; the detector's lights and beeps rise near the tracker. Click where it is.
   Games.tracker = function (g) {
     const o = g.o;
     const puzzle = M.makeTracker(g.rand, o.decoys || 0);
     const W = 624, H = Math.round(W * M.ROOM_H), S = W;
     const canvas = el('canvas', 'car');
     canvas.width = W; canvas.height = H;
-    const meter = el('div', 'meter');
-    const fill = el('div', 'meter-fill');
-    const label = el('span', 'meter-label', `${g.t.signal}: 0%`);
-    meter.append(fill, label);
+    // the detector
+    const det = svgBox(116, 380, 'detector');
+    sv('rect', { x: 52, y: 0, width: 6, height: 90, rx: 3, class: 'c-antenna' }, det);
+    sv('circle', { cx: 55, cy: 0, r: 6, class: 'c-antenna' }, det);
+    sv('rect', { x: 0.5, y: 80.5, width: 115, height: 298, rx: 18, class: 'c-plastic' }, det);
+    svText(det, 58, 108, 'RF SWEEP', { 'text-anchor': 'middle', class: 't-print', 'font-size': 9, 'letter-spacing': 2 });
+    sv('rect', { x: 26, y: 116, width: 64, height: 176, rx: 4, class: 'c-recess' }, det);
+    const leds = [...Array(10)].map((_, i) => sv('rect', { x: 36, y: 276 - i * 17, width: 44, height: 12, rx: 2, class: `c-bar ${i < 4 ? 'lo' : i < 8 ? 'mid' : 'hi'}` }, det));
+    const pct = svText(det, 58, 324, '0%', { 'text-anchor': 'middle', class: 't-display-light', 'font-size': 18 });
+    sv('circle', { cx: 58, cy: 352, r: 10, class: 'c-knob' }, det);
+    const row = el('div', 'row');
+    row.append(canvas, det);
     const flash = el('div', 'flash');
-    const wrap = el('div', 'room-wrap');
-    wrap.append(tablet(canvas, meter), flash);
-    $('mg-body').append(wrap);
+    $('mg-body').append(row, flash);
     const ctx = canvas.getContext('2d');
     let lives = o.lives || 1, scan = null, lastBeep = 0;
     const misses = [];
     let found = null;
     const round = (x, y, w, h, r) => { ctx.beginPath(); ctx.roundRect ? ctx.roundRect(x, y, w, h, r) : ctx.rect(x, y, w, h); };
-    // A car seen from above, front to the right: wheels, body, mirrors, windows, roof, hood and
-    // door lines, headlights and taillights
+    // A car seen from above, front to the right: wheels, body, windows, roof, hood, lights
     const drawCar = () => {
       const X = (v) => v * S, Y = (v) => v * H;
       const edge = cssColor('--car-edge');
       ctx.fillStyle = cssColor('--car-wheel');
-      for (const [x, y] of [[0.19, 0.09], [0.7, 0.09], [0.19, 0.79], [0.7, 0.79]]) { round(X(x), Y(y), X(0.1), Y(0.12), 6); ctx.fill(); }
+      for (const [x, y] of [[0.19, 0.06], [0.7, 0.06], [0.19, 0.82], [0.7, 0.82]]) { round(X(x), Y(y), X(0.12), Y(0.12), 8); ctx.fill(); }
       ctx.fillStyle = cssColor('--car-body'); ctx.strokeStyle = edge; ctx.lineWidth = 2;
-      for (const y of [0.1, 0.9]) { ctx.beginPath(); ctx.ellipse(X(0.61), Y(y), X(0.022), Y(0.035), 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); } // mirrors
-      round(X(0.08), Y(0.14), X(0.84), Y(0.72), 46); ctx.fill(); ctx.stroke();
+      round(X(0.08), Y(0.1), X(0.84), Y(0.8), 90); ctx.fill(); ctx.stroke();
+      const shade = ctx.createLinearGradient(0, Y(0.1), 0, Y(0.9));
+      shade.addColorStop(0, 'rgba(255,255,255,0.18)'); shade.addColorStop(0.5, 'rgba(255,255,255,0)'); shade.addColorStop(1, 'rgba(0,0,0,0.18)');
+      ctx.fillStyle = shade; round(X(0.08), Y(0.1), X(0.84), Y(0.8), 90); ctx.fill();
       ctx.fillStyle = cssColor('--car-glass');
-      ctx.beginPath(); ctx.moveTo(X(0.555), Y(0.24)); ctx.lineTo(X(0.64), Y(0.2)); ctx.lineTo(X(0.64), Y(0.8)); ctx.lineTo(X(0.555), Y(0.76)); ctx.closePath(); ctx.fill(); // windscreen
-      ctx.beginPath(); ctx.moveTo(X(0.27), Y(0.22)); ctx.lineTo(X(0.33), Y(0.25)); ctx.lineTo(X(0.33), Y(0.75)); ctx.lineTo(X(0.27), Y(0.78)); ctx.closePath(); ctx.fill(); // rear window
-      ctx.strokeStyle = edge; ctx.globalAlpha = 0.45; ctx.lineWidth = 1.5;
-      round(X(0.34), Y(0.26), X(0.21), Y(0.48), 10); ctx.stroke(); // roof
-      ctx.beginPath(); ctx.moveTo(X(0.66), Y(0.3)); ctx.quadraticCurveTo(X(0.8), Y(0.35), X(0.9), Y(0.34)); ctx.moveTo(X(0.66), Y(0.7)); ctx.quadraticCurveTo(X(0.8), Y(0.65), X(0.9), Y(0.66)); ctx.stroke(); // hood
-      ctx.beginPath(); ctx.moveTo(X(0.45), Y(0.15)); ctx.lineTo(X(0.45), Y(0.23)); ctx.moveTo(X(0.45), Y(0.77)); ctx.lineTo(X(0.45), Y(0.85)); ctx.stroke(); // doors
+      ctx.beginPath(); ctx.moveTo(X(0.3), Y(0.2)); ctx.lineTo(X(0.43), Y(0.23)); ctx.lineTo(X(0.43), Y(0.77)); ctx.lineTo(X(0.3), Y(0.8)); ctx.closePath(); ctx.fill(); // rear window
+      ctx.beginPath(); ctx.moveTo(X(0.64), Y(0.22)); ctx.lineTo(X(0.54), Y(0.25)); ctx.lineTo(X(0.54), Y(0.75)); ctx.lineTo(X(0.64), Y(0.78)); ctx.closePath(); ctx.fill(); // windscreen
+      ctx.fillStyle = cssColor('--car-roof'); round(X(0.43), Y(0.25), X(0.11), Y(0.5), 6); ctx.fill(); // roof
+      ctx.strokeStyle = edge; ctx.globalAlpha = 0.7; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(X(0.7), Y(0.25)); ctx.quadraticCurveTo(X(0.82), Y(0.3), X(0.88), Y(0.36)); ctx.moveTo(X(0.7), Y(0.75)); ctx.quadraticCurveTo(X(0.82), Y(0.7), X(0.88), Y(0.64)); ctx.stroke(); // hood
       ctx.globalAlpha = 1;
-      ctx.fillStyle = '#ffe9a8';
-      for (const y of [0.2, 0.72]) { round(X(0.895), Y(y), X(0.018), Y(0.08), 3); ctx.fill(); } // headlights
-      ctx.fillStyle = '#ff4057';
-      for (const y of [0.2, 0.72]) { round(X(0.087), Y(y), X(0.014), Y(0.08), 3); ctx.fill(); } // taillights
+      ctx.fillStyle = '#f3e6b0';
+      for (const y of [0.22, 0.64]) { round(X(0.9), Y(y), X(0.016), Y(0.14), 3); ctx.fill(); } // headlights
+      ctx.fillStyle = '#d23b2f';
+      for (const y of [0.22, 0.64]) { round(X(0.084), Y(y), X(0.013), Y(0.14), 3); ctx.fill(); } // taillights
     };
     const draw = (now) => {
-      ctx.fillStyle = cssColor('--floor'); ctx.fillRect(0, 0, W, H);
+      ctx.clearRect(0, 0, W, H);
       drawCar();
       for (const m of misses) {
         ctx.strokeStyle = cssColor('--bad'); ctx.lineWidth = 3;
@@ -1056,27 +1135,20 @@
         ctx.fillStyle = cssColor('--good');
         ctx.beginPath(); ctx.arc(found.x * S, found.y * S, 9, 0, Math.PI * 2); ctx.fill();
       }
+      let s = 0;
       if (scan) {
-        const s = M.signal(scan, puzzle);
+        s = M.signal(scan, puzzle);
         const pulse = Math.max(0, 1 - (now - lastBeep) / 300);
-        const cx = scan.x * S, cy = scan.y * S, R = 42;
-        const brand = cssColor('--scan') || '#8fd3ff';
-        // radar: a sweeping wedge that fades behind the line, turning faster on a strong signal
-        const angle = (now / 1000) * (2 + s * 5);
-        for (let k = 0; k < 14; k++) {
-          ctx.globalAlpha = 0.28 * (1 - k / 14);
-          ctx.fillStyle = brand;
-          ctx.beginPath(); ctx.moveTo(cx, cy); ctx.arc(cx, cy, R, angle - (k + 1) * 0.07, angle - k * 0.07); ctx.closePath(); ctx.fill();
-        }
-        ctx.globalAlpha = 0.35; ctx.strokeStyle = brand; ctx.lineWidth = 1;
-        ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.stroke();
-        ctx.beginPath(); ctx.arc(cx, cy, R / 2, 0, Math.PI * 2); ctx.stroke();
-        ctx.globalAlpha = 0.5 + 0.5 * pulse; ctx.lineWidth = 2;
-        ctx.beginPath(); ctx.arc(cx, cy, 8 + pulse * 10, 0, Math.PI * 2); ctx.stroke();
-        ctx.globalAlpha = 1;
-        fill.style.width = `${Math.round(s * 100)}%`;
-        label.textContent = `${g.t.signal}: ${Math.round(s * 100)}%`;
+        const cx = scan.x * S, cy = scan.y * S;
+        ctx.strokeStyle = cssColor('--scan') || '#fff'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(cx, cy, 30, 0, Math.PI * 2); ctx.stroke();
+        ctx.globalAlpha = pulse; ctx.beginPath(); ctx.arc(cx, cy, 30 + (1 - pulse) * 14, 0, Math.PI * 2); ctx.stroke(); ctx.globalAlpha = 1;
+        ctx.fillStyle = cssColor('--scan') || '#fff';
+        ctx.beginPath(); ctx.arc(cx, cy, 3, 0, Math.PI * 2); ctx.fill();
       }
+      const lit = Math.round(s * 10);
+      leds.forEach((l, i) => l.classList.toggle('on', i < lit));
+      pct.textContent = `${Math.round(s * 100)}%`;
     };
     canvas.onmousemove = (e) => {
       const r = canvas.getBoundingClientRect();
@@ -1100,7 +1172,8 @@
       }
       draw(now);
     };
-    setText($('mg-hint'), g.t.tracker_hint);
+    hint(g.t.do_tracker);
+    keyBar([['mouse', g.t.key_search]]);
     counter(g.t.lives, lives);
     draw(performance.now());
     startTimer(o.time || 35);

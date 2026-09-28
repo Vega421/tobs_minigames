@@ -26,14 +26,15 @@ MG.Animations = {
     wires = "repair", hotwire = "hotwire", lockpick = "kneel", keyfiling = "kneel",
 }
 
--- Look of the web minigames: "default" (GTA Online's titles and key bar, each game on a real-looking
--- device, no dark window behind it), "terminal" (green hacker terminal with scanlines) or "glass" (frosted glass over the game)
+-- Look of the web minigames: "default" (each game is one real object: a keypad, a charge, a junction
+-- box, a lock, ... with GTA's key bar), "terminal" (the same objects as green lines on black) or
+-- "glass" (the same objects frosted and see-through)
 MG.Style = "default"
 
 -- Your own colours, on top of the style's (any CSS colour). Leave a colour out to keep the style's.
--- accent: the timer and thin accent lines; background: the panel; text; muted: hints and
--- counters; good: right answers; bad: mistakes and lasers; gold: the lockpick's sweet spot
--- Example: MG.Theme = {accent = "#3e7bfa", gold = "#b58cff"}
+-- accent: the test menu's highlighted lines; background: the how-to card, the result and the menu;
+-- text; muted: small text; good: right answers; bad: mistakes and lasers; gold: the lockpick's sweet spot
+-- Example: MG.Theme = {good = "#3e7bfa", gold = "#b58cff"}
 MG.Theme = {}
 
 -- Trackers on vehicles (server/tracker.lua): scripts put them on, players sweep for them with
