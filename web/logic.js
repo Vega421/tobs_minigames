@@ -1,5 +1,5 @@
 // Game logic for the web minigames, without any drawing, so it runs in Node too
-// (tests/web/logic.test.js). The page uses it as window.MGLogic.
+// and can be tested outside the game. The page uses it as window.MGLogic.
 (function (root) {
   'use strict';
   const L = {};

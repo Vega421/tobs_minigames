@@ -8,7 +8,7 @@
   'use strict';
   const M = window.MGLogic;
   const $ = (id) => document.getElementById(id);
-  // Outside FiveM (dev/preview.html) there's no game: results and sounds go to the page around this one
+  // Outside FiveM (a browser preview) there's no game: results and sounds go to the page around this one
   const IN_GAME = typeof GetParentResourceName === 'function';
   const RESOURCE = IN_GAME ? GetParentResourceName() : 'tobs_minigames';
   const WIRE_HEX = { red: '#c8312b', blue: '#2459c4', yellow: '#e8c832', green: '#2e8b4e', white: '#e9e9e6', black: '#1c1f26', orange: '#e0782b', purple: '#7d45b8' };
