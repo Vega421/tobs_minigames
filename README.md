@@ -63,7 +63,6 @@ Every export, option, event and command, including trackers on vehicles for car 
 ## Working on it
 
 - `dev/preview.html` plays the web minigames in a browser, without FiveM. After changing `config.lua` or the texts, run `lua5.4 dev/build_preview.lua`.
-- [TESTING.md](TESTING.md) is the in-game checklist.
 - The tests run on every push. Locally:
 
 ```bash
