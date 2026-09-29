@@ -7,7 +7,7 @@
 [![Release](https://img.shields.io/github/v/release/Vega421/tobs_minigames?style=flat-square\&color=ff6b2c\&label=release)](https://github.com/Vega421/tobs_minigames/releases/latest)
 [![License](https://img.shields.io/github/license/Vega421/tobs_minigames?style=flat-square)](LICENSE)
 
-[**Download**](https://github.com/Vega421/tobs_minigames/releases/latest) · [**Documentation**](https://vega421.github.io/scripts/tobs-minigames/) · [Exports](EXPORTS.md) · [Changelog](CHANGELOG.md) · [Report a problem](https://github.com/Vega421/tobs_minigames/issues)
+[**Download**](https://github.com/Vega421/tobs_minigames/releases/latest) · [**Documentation**](https://vega421.github.io/scripts/tobs-minigames/) · [Exports](https://vega421.github.io/scripts/tobs-minigames/exports/) · [Changelog](CHANGELOG.md) · [Report a problem](https://github.com/Vega421/tobs_minigames/issues)
 
 </div>
 
@@ -64,7 +64,7 @@ local passed = exports.tobs_minigames:Play(source, "safe", "hard")
 
 A minigame runs in the player's game, so a cheater can fake the result, as with any FiveM minigame. `Play` accepts one answer from that player and rejects results that arrive faster than the game can reasonably be played; your script should still validate anything that pays out.
 
-Every export, option, event and command, including trackers on vehicles for car boosting, is documented in [EXPORTS.md](EXPORTS.md) or [For developers](https://vega421.github.io/scripts/tobs-minigames/exports/).
+Every export, option, event and command, including trackers on vehicles for car boosting, is documented in [For developers](https://vega421.github.io/scripts/tobs-minigames/exports/).
 
 ## Credits
 

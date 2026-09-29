@@ -6,5 +6,5 @@ tobs_minigames
 3. Restart the server and type /minigame in game to try every minigame.
 
 No framework, database, items or other resources needed. Settings: tobs_minigames/config.lua
-For script makers: tobs_minigames/EXPORTS.md
+For script makers: https://vega421.github.io/scripts/tobs-minigames/exports/
 
