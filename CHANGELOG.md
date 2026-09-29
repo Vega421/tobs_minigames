@@ -2,7 +2,7 @@
 
 All notable changes to tobs_minigames. Each version is also a [GitHub release](https://github.com/Vega421/tobs_minigames/releases) with a ready-to-use zip.
 
-## 1.0.0 · unreleased
+## 1.0.0 · 2026-09-29
 
 **The first version: twelve minigames any script can use.**
 
