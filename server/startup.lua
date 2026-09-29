@@ -6,8 +6,7 @@
 -- manifest description, so they aren't mistaken for the originals.
 MGReplaceable = {"qb-minigames", "memorygame", "mhacking", "safecracker"}
 
--- The drop-ins come in a later update: until then the hint stays off, since the download has no
--- [tobs_minigames-compat] folder to point to
+-- The drop-ins come in a later update: until then the hint stays off
 MGDropInsShipped = false
 
 local function IsOurDropIn(res)

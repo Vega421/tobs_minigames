@@ -24,8 +24,6 @@ print(f"""## What's new
 2. Put the `tobs_minigames` folder in `resources/` (replace your old one when updating).
 3. Add `ensure tobs_minigames` to `server.cfg`, restart, and type `/minigame` in game.
 
-Optional: `[tobs_minigames-compat]` lets scripts that use qb-minigames, memorygame, mhacking or safecracker play tobs_minigames' games without edits. The server console tells you if you have any of them; see `INSTALL.txt`.
-
 **Works with:** any framework, or none. No database, items or other resources needed.
 
 ---
