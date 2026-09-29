@@ -7,7 +7,7 @@ import sys
 
 REPO = "Vega421/tobs_minigames"
 ZIP = "tobs_minigames-v{version}.zip"
-DOCS = "https://github.com/Vega421/tobs_minigames#readme"
+DOCS = "https://vega421.github.io/scripts/tobs-minigames/"
 
 version = sys.argv[1].lstrip("v")
 changelog = open("CHANGELOG.md", encoding="utf-8").read()
