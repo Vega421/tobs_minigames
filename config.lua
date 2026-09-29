@@ -7,8 +7,7 @@ MG.Sounds = true -- GTA's hacking sounds in the web minigames (clicks, right, wr
 -- /minigame <name> [easy|medium|hard] lets anyone try a minigame (it gives nothing). false = off
 MG.TestCommand = "minigame"
 
--- A line in the server console at start, and a hint when drop-ins from [tobs_minigames-compat]
--- could make your other scripts use tobs_minigames. false = quiet
+-- A line in the server console at start. false = quiet
 MG.StartupMessage = true
 
 -- The web minigames' window

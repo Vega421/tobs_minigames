@@ -193,12 +193,6 @@ end)
 
 ---
 
-## Drop-in replacements
-
-Scripts written for **qb-minigames**, **memorygame**, **mhacking** or **safecracker** (Qbox's bank and store robberies use the last two) can use tobs_minigames without being changed: replace the original with the folder of the same name from `[tobs_minigames-compat]` in the download (`compat/` in this repo). See [compat/README.md](compat/README.md).
-
----
-
 ## The 12 minigames
 
 | Name | Export | What the player does |

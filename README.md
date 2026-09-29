@@ -43,8 +43,6 @@ Each has an easy, medium and hard setting. The web minigames are drawn as real o
 
 The defaults in `config.lua` work as they are. Every setting: [Configuration](https://vega421.github.io/scripts/tobs-minigames/configuration/).
 
-**Your server runs qb-minigames, memorygame, mhacking or safecracker?** The zip's `[tobs_minigames-compat]` folder has a drop-in for each, so the scripts that call them play tobs_minigames' games without any edits. Replace the original with the folder of the same name and `ensure` it after `tobs_minigames`. See [Drop-ins](https://vega421.github.io/scripts/tobs-minigames/drop-ins/).
-
 ## Use it in your script
 
 ```lua
@@ -65,7 +63,7 @@ Every export, option, event and command, including trackers on vehicles for car 
 ## Working on it
 
 - `dev/preview.html` plays the web minigames in a browser, without FiveM. After changing `config.lua` or the texts, run `lua5.4 dev/build_preview.lua`.
-- [TESTING.md](TESTING.md) is the in-game checklist, with and without the drop-ins; `dev/tobs_compattest` (`/compattest`) calls the drop-ins like other scripts do.
+- [TESTING.md](TESTING.md) is the in-game checklist.
 - The tests run on every push. Locally:
 
 ```bash
@@ -81,4 +79,3 @@ Made by Vega. GPL-3.0.
 - Hacking laptop method names: [TransitNode/Hacking_PC](https://github.com/TransitNode/Hacking_PC) and draobrehtom's HackingGame gist (names only)
 - Safe dial sprite names: [TimothyDexter/FiveM-SafeCrackingMinigame](https://github.com/TimothyDexter/FiveM-SafeCrackingMinigame) (names only)
 - Sound, animation, scenario and prop names checked in [DurtyFree/gta-v-data-dumps](https://github.com/DurtyFree/gta-v-data-dumps)
-- Drop-ins match the exports and events of [qb-minigames](https://github.com/qbcore-fivem/qb-minigames) (GPL-3.0), [safecracker](https://github.com/qbcore-fivem/safecracker), memorygame and mhacking (names only, no code copied)
