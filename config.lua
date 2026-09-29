@@ -44,8 +44,9 @@ MG.Sweep = {distance = 4.0, difficulty = "medium", scan = 3000, notify = true}
 
 -- Server: an answer to exports.tobs_minigames:Play that comes back faster than this (ms) counts as
 -- failed. Leave a game out to use the built-in guess: drill = its time - 1 s, safe = 1.5 s per number,
--- fingerprint = 1.5 s per print, hack = 4 s, keypad / thermite = the time the code or squares are shown + 0.5 s, lasers = 2.5 s,
--- key filing = the time to file every cut to the shallowest depth, the rest = 1 s.
+-- fingerprint = 1.5 s per print, hack = 4 s, keypad / thermite = the time the code or squares are
+-- shown + 0.5 s, lasers = 2.5 s, key filing = the time to file every cut to the shallowest depth,
+-- the rest = 1 s.
 -- Example: MG.MinTime = {lockpick = 2500, wires = 3000}
 MG.MinTime = {}
 
