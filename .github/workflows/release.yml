@@ -9,7 +9,7 @@ permissions:
   contents: write
 
 jobs:
-  # The tests are kept in a private repo (tobs_minigames-dev), read with a read-only deploy key
+  # The tests are kept in a private repo (tobs_dev, folder tobs_minigames-tests), read with a read-only deploy key
   # (the DEV_DEPLOY_KEY secret). A release is only published when they pass.
   tests:
     runs-on: ubuntu-latest
@@ -19,16 +19,16 @@ jobs:
           path: tobs_minigames
       - uses: actions/checkout@v4
         with:
-          repository: Vega421/tobs_minigames-dev
+          repository: Vega421/tobs_dev
           ssh-key: ${{ secrets.DEV_DEPLOY_KEY }}
-          path: tobs_minigames-dev
+          path: tobs_dev
       - name: Install Lua 5.4
         run: sudo apt-get update -q && sudo apt-get install -y -q lua5.4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
       - name: Tests
-        run: ./tobs_minigames-dev/run-tests.sh
+        run: ./tobs_dev/tobs_minigames-tests/run-tests.sh
 
   release:
     needs: tests
